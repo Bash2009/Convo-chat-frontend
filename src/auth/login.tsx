@@ -3,6 +3,7 @@ import { useState } from "react";
 import { auth } from "../firebase";
 import api from "../backend";
 import { useNavigate } from "react-router-dom";
+import { useErrorModal, getFriendlyErrorMessage } from "../ErrorModal";
 
 interface LoginProps {
 	handleChange: () => void;
@@ -10,6 +11,7 @@ interface LoginProps {
 
 const Login = ({ handleChange }: LoginProps) => {
 	const navigate = useNavigate();
+	const { showError } = useErrorModal();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [errors, setErrors] = useState<{ email?: string; password?: string }>(
@@ -50,7 +52,7 @@ const Login = ({ handleChange }: LoginProps) => {
 			email,
 			password
 		).catch((error) => {
-			alert(`Error ${error.code}: ${error.message}`);
+			showError(getFriendlyErrorMessage(error));
 		});
 
 		const user = userCredentials?.user;

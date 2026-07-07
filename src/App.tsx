@@ -4,14 +4,17 @@ import "./index.css";
 import "./verification/VerifyEmail.css";
 import "./chatList/ChatList.css";
 
+import { ErrorModalProvider } from "./ErrorModal";
 import Auth from "./auth/auth";
 import RequireAuth from "./auth/RequireAuth";
 import VerifyEmail from "./verification/VerifyEmail";
 import ProfileSetup from "./profileSetup/ProfileSetup";
+import ProfileEdit from "./profileEdit/ProfileEdit";
 import ChatLayout from "./chatList/ChatLayout";
 
 const App = () => {
 	return (
+		<ErrorModalProvider>
 		<BrowserRouter>
 			<Routes>
 				{/* Public */}
@@ -35,8 +38,17 @@ const App = () => {
 						</RequireAuth>
 					}
 				/>
+				<Route
+					path="/settings"
+					element={
+						<RequireAuth>
+							<ProfileEdit />
+						</RequireAuth>
+					}
+				/>
 			</Routes>
 		</BrowserRouter>
+		</ErrorModalProvider>
 	);
 };
 

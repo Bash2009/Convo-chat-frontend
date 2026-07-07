@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { socket } from "../backend";
 import { logout } from "../backend";
 import { NewChatModal } from "./components/NewChatModal";
@@ -9,15 +9,20 @@ import Chat from "./components/Chat";
 import type { ChatStructure, Modal, Participant, UserStatus } from "./constants";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
+import { useErrorModal } from "../ErrorModal";
 
-const ChatList = ({
-	activeChatId,
-	onSelectChat,
-}: {
-	activeChatId?: string;
-	onSelectChat: (id: string, allChats: ChatStructure[]) => void;
-}) => {
+const ChatList = forwardRef(function ChatList(
+	{
+		activeChatId,
+		onSelectChat,
+	}: {
+		activeChatId?: string;
+		onSelectChat: (id: string, allChats: ChatStructure[]) => void;
+	},
+	ref,
+) {
 	const navigate = useNavigate();
+	const { showError } = useErrorModal();
 	const [chats, setChats]           = useState<ChatStructure[]>([]);
 	const [search, setSearch]         = useState("");
 	const [loading, setLoading]       = useState(true);
@@ -27,6 +32,19 @@ const ChatList = ({
 	const [userStatus, setUserStatus] = useState<UserStatus>("idle");
 	const [foundUser, setFoundUser]   = useState<Participant>();
 	const dropdownRef = useRef<HTMLDivElement>(null);
+
+	// Expose updateChatPreview so ChatRoom can update the list when new messages arrive
+	useImperativeHandle(ref, () => ({
+		updateChatPreview(chatId: string, text: string, sentAt: string) {
+			setChats((prev) =>
+				prev.map((c) =>
+					c.id === chatId
+						? { ...c, lastMessage: text, lastMessageAt: sentAt }
+						: c,
+				),
+			);
+		},
+	}));
 
 	// ── Socket lifecycle ──────────────────────────────────────────────────────
 	// ChatList owns the single shared socket. ChatRoom never calls connect/disconnect.
@@ -54,10 +72,18 @@ const ChatList = ({
 			setChats((prev) => {
 				// Don't add if it already exists (e.g. from a race condition)
 				if (prev.some((c) => c.id === newChat.id)) return prev;
-				const updated = [newChat, ...prev];
-				onSelectChat(newChat.id, updated);
-				return updated;
+				return [newChat, ...prev];
 			});
+		});
+
+		socket.on("chatDeleted", ({ id }: { id: string }) => {
+			setChats((prev) => prev.filter((c) => c.id !== id));
+		});
+
+		socket.on("memberAdded", (updatedChat: ChatStructure) => {
+			setChats((prev) =>
+				prev.map((c) => (c.id === updatedChat.id ? updatedChat : c)),
+			);
 		});
 
 		socket.on("userSearch", (data) => {
@@ -80,12 +106,20 @@ const ChatList = ({
 			);
 		});
 
+		// Surface server-side socket errors to the user
+		socket.on("error", (err: { event: string; message: string }) => {
+			showError(err.message || `Something went wrong while processing "${err.event}".`);
+		});
+
 		return () => {
 			socket.off("chats");
 			socket.off("connect_error");
 			socket.off("chatCreated");
+			socket.off("chatDeleted");
+			socket.off("memberAdded");
 			socket.off("userSearch");
 			socket.off("newMessage");
+			socket.off("error");
 			socket.disconnect();
 		};
 	}, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -188,6 +222,17 @@ const ChatList = ({
 
 						<button
 							className="chatlist-icon-btn"
+							title="Edit profile"
+							onClick={() => navigate("/settings")}
+						>
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+								<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+								<circle cx="12" cy="7" r="4" />
+							</svg>
+						</button>
+
+						<button
+							className="chatlist-icon-btn"
 							title="Sign out"
 							onClick={handleLogout}
 						>
@@ -256,6 +301,7 @@ const ChatList = ({
 			</div>
 		</>
 	);
-};
+});
 
+export type ChatListHandle = { updateChatPreview: (chatId: string, text: string, sentAt: string) => void };
 export default ChatList;

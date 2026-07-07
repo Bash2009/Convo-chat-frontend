@@ -4,7 +4,6 @@ export interface ProfileData {
   username: string;
   bio: string;
   location: string;
-  website: string;
   avatarFile: File | null;
   avatarPreview: string;
 }
@@ -13,5 +12,4 @@ export interface ProfileErrors {
   firstName?: string;
   lastName?: string;
   username?: string;
-  website?: string;
 }

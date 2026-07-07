@@ -3,6 +3,7 @@ import { auth } from "../firebase";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import api from "../backend";
 import { useNavigate } from "react-router-dom";
+import { useErrorModal, getFriendlyErrorMessage } from "../ErrorModal";
 
 interface SignUpProps {
 	handleChange: () => void;
@@ -10,6 +11,7 @@ interface SignUpProps {
 
 const SignUp = ({ handleChange }: SignUpProps) => {
 	const navigate = useNavigate();
+	const { showError } = useErrorModal();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
@@ -63,7 +65,7 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 			email,
 			password
 		).catch((error) => {
-			alert(`Error ${error.code}: ${error.message}`);
+			showError(getFriendlyErrorMessage(error));
 		});
 
 		const user = userCredentials?.user;
@@ -77,7 +79,7 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 				localStorage.setItem("refresh_token", data.refresh_token);
 				navigate("/verify-email");
 			} catch (err) {
-				alert(err);
+				showError(getFriendlyErrorMessage(err));
 				await signOut(auth);
 			}
 		}

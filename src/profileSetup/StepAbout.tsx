@@ -17,7 +17,7 @@ interface Props {
   onFileChange: (file: File) => void;
 }
 
-const StepAbout = ({ data, errors, onChange, onFileChange }: Props) => {
+const StepAbout = ({ data, onChange, onFileChange }: Props) => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileInput = (e: ChangeEvent<HTMLInputElement>) => {
@@ -97,20 +97,6 @@ const StepAbout = ({ data, errors, onChange, onFileChange }: Props) => {
           onChange={(e) => onChange("location", e.target.value)}
         />
         <label htmlFor="p_location">Location</label>
-      </div>
-
-      {/* Website */}
-      <div className="form-floating mb-1">
-        <input
-          type="url"
-          id="p_website"
-          placeholder=""
-          className={`form-control ${errors.website ? "is-invalid" : ""}`}
-          value={data.website}
-          onChange={(e) => onChange("website", e.target.value)}
-        />
-        <label htmlFor="p_website">Website</label>
-        {errors.website && <div className="invalid-feedback">{errors.website}</div>}
       </div>
 
     </div>
