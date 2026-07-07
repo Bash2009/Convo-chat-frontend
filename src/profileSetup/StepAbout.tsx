@@ -17,7 +17,7 @@ interface Props {
   onFileChange: (file: File) => void;
 }
 
-const StepAbout = ({ data, errors, onChange, onFileChange }: Props) => {
+const StepAbout = ({ data, onChange, onFileChange }: Props) => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileInput = (e: ChangeEvent<HTMLInputElement>) => {

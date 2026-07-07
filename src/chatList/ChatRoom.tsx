@@ -150,6 +150,13 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 			},
 		);
 
+		// Confirm deletion from server before closing the room
+		socket.on("chatDeleted", ({ id }: { id: string }) => {
+			if (id === chat.id) {
+				onChatDeleted?.(id);
+			}
+		});
+
 		// Mark existing messages as read when the room opens
 		socket.emit("markRead", { chatId: chat.id, uid: currentUid });
 
@@ -158,6 +165,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 			socket.off("messages");
 			socket.off("newMessage");
 			socket.off("messageStatus");
+			socket.off("chatDeleted");
 		};
 	}, [chat.id, currentUid]);
 
@@ -182,7 +190,6 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 	const handleDeleteChat = () => {
 		if (!window.confirm("Delete this conversation? This cannot be undone.")) return;
 		socket.emit("deleteChat", { chatId: chat.id });
-		onChatDeleted?.(chat.id);
 	};
 
 	// ── Send ──────────────────────────────────────────────────────────────────

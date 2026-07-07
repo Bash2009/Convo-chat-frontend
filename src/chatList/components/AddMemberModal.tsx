@@ -37,7 +37,6 @@ export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 		setSearchStatus("loading");
 
 		const handler = (data: { userExists: boolean; profile: { user: { uid: string; profile: { firstName: string; lastName: string; username: string; avatarUrl: string } } } }) => {
-			listenerRef.current = null;
 			if (data.userExists) {
 				setFoundUser({
 					uid: data.profile.user.uid,
@@ -54,8 +53,8 @@ export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 		};
 
 		listenerRef.current = handler;
-		socket.emit("getUser", { username: value.trim() });
 		socket.on("userSearch", handler);
+		socket.emit("getUser", { username: value.trim() });
 	};
 
 	const addParticipant = (p: Participant) => {
