@@ -217,6 +217,75 @@
 
 .chatroom-tick { opacity: 0.7; }
 
+/* ── ChatRoom actions (vertical dots dropdown) ───────────────────────────── */
+
+.chatroom-actions-wrap {
+	position: relative;
+	flex-shrink: 0;
+}
+
+.chatroom-actions-btn {
+	width: 32px;
+	height: 32px;
+	border-radius: 8px;
+	border: none;
+	background: transparent;
+	color: #6b7280;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: background 0.12s;
+}
+.chatroom-actions-btn:hover {
+	background: #f3f4f6;
+	color: #374151;
+}
+
+.chatroom-actions-menu {
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	z-index: 200;
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+	overflow: hidden;
+	min-width: 170px;
+	animation: dropdownFadeIn 0.12s ease;
+}
+
+.chatroom-actions-item {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 10px 14px;
+	background: none;
+	border: none;
+	font-family: "DM Sans", sans-serif;
+	font-size: 0.85rem;
+	font-weight: 500;
+	color: #111827;
+	cursor: pointer;
+	text-align: left;
+	transition: background 0.12s;
+}
+.chatroom-actions-item:hover {
+	background: #f3f4f6;
+}
+.chatroom-actions-item.danger {
+	color: #ef4444;
+}
+.chatroom-actions-item.danger:hover {
+	background: #fef2f2;
+}
+.chatroom-actions-item svg {
+	flex-shrink: 0;
+	color: inherit;
+}
+
 /* Input bar */
 .chatroom-input-bar {
 	display: flex;

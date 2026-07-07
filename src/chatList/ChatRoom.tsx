@@ -4,6 +4,7 @@ import { socket } from "../backend";
 import { Avatar } from "./components/Avatar";
 import { auth } from "../firebase";
 import type { ChatStructure } from "./constants";
+import { AddMemberModal } from "./components/AddMemberModal";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -18,6 +19,8 @@ interface Message {
 interface Props {
 	chat: ChatStructure;
 	onBack: () => void;
+	onPreviewUpdate?: (chatId: string, text: string, sentAt: string) => void;
+	onChatDeleted?: (chatId: string) => void;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -91,13 +94,16 @@ const StatusTick = ({ status }: { status: Message["status"] }) => {
 // This component does NOT own the socket connection — ChatList does.
 // ChatRoom only emits joinChat / leaveChat and listens for room-scoped events.
 
-const ChatRoom = ({ chat, onBack }: Props) => {
+const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 	const navigate   = useNavigate();
 	const currentUid = auth.currentUser?.uid ?? "";
 
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput]       = useState("");
 	const [loading, setLoading]   = useState(true);
+	const [showActions, setShowActions] = useState(false);
+	const [showAddMember, setShowAddMember] = useState(false);
+	const actionsRef = useRef<HTMLDivElement>(null);
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const inputRef  = useRef<HTMLTextAreaElement>(null);
 
@@ -132,6 +138,7 @@ const ChatRoom = ({ chat, onBack }: Props) => {
 
 		socket.on("newMessage", (msg: Message) => {
 			setMessages((prev) => [...prev, msg]);
+			onPreviewUpdate?.(chat.id, msg.text, msg.sentAt);
 		});
 
 		socket.on(
@@ -158,6 +165,25 @@ const ChatRoom = ({ chat, onBack }: Props) => {
 	useEffect(() => {
 		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, [messages]);
+
+	// ── Close actions dropdown on outside click ─────────────────────────────
+
+	useEffect(() => {
+		const handler = (e: MouseEvent) => {
+			if (actionsRef.current && !actionsRef.current.contains(e.target as Node))
+				setShowActions(false);
+		};
+		document.addEventListener("mousedown", handler);
+		return () => document.removeEventListener("mousedown", handler);
+	}, []);
+
+	// ── Delete chat ───────────────────────────────────────────────────────────
+
+	const handleDeleteChat = () => {
+		if (!window.confirm("Delete this conversation? This cannot be undone.")) return;
+		socket.emit("deleteChat", { chatId: chat.id });
+		onChatDeleted?.(chat.id);
+	};
 
 	// ── Send ──────────────────────────────────────────────────────────────────
 
@@ -216,7 +242,65 @@ const ChatRoom = ({ chat, onBack }: Props) => {
 							: "Tap avatar to view profile"}
 					</p>
 				</div>
+
+				{/* Actions dropdown */}
+				<div className="chatroom-actions-wrap" ref={actionsRef}>
+					<button
+						className="chatroom-actions-btn"
+						title="Chat options"
+						onClick={() => setShowActions((v) => !v)}
+					>
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+							<circle cx="12" cy="5" r="1.5" fill="currentColor" />
+							<circle cx="12" cy="12" r="1.5" fill="currentColor" />
+							<circle cx="12" cy="19" r="1.5" fill="currentColor" />
+						</svg>
+					</button>
+
+					{showActions && (
+						<div className="chatroom-actions-menu">
+							{chat.isGroup && (
+								<button
+									className="chatroom-actions-item"
+									onClick={() => {
+										setShowActions(false);
+										setShowAddMember(true);
+									}}
+								>
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+										<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+										<circle cx="9" cy="7" r="4" />
+										<line x1="23" y1="7" x2="23" y2="13" />
+										<line x1="20" y1="10" x2="26" y2="10" />
+									</svg>
+									Add members
+								</button>
+							)}
+							<button
+								className="chatroom-actions-item danger"
+								onClick={() => {
+									setShowActions(false);
+									handleDeleteChat();
+								}}
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<polyline points="3 6 5 6 21 6" />
+									<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+								</svg>
+								Delete chat
+							</button>
+						</div>
+					)}
+				</div>
 			</div>
+
+			{/* Add member modal */}
+			{showAddMember && (
+				<AddMemberModal
+					chatId={chat.id}
+					onClose={() => setShowAddMember(false)}
+				/>
+			)}
 
 			{/* Messages */}
 			<div className="chatroom-messages">

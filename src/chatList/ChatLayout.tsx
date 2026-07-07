@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import ChatList from "./ChatList";
+import type { ChatListHandle } from "./ChatList";
 import ChatRoom from "./ChatRoom";
 import type { ChatStructure } from "./constants";
 
@@ -11,10 +12,21 @@ import "./ChatLayout.css";
 
 const ChatLayout = () => {
 	const [activeChat, setActiveChat] = useState<ChatStructure | null>(null);
+	const chatListRef = useRef<ChatListHandle>(null);
 
 	const handleSelectChat = (id: string, allChats: ChatStructure[]) => {
 		const found = allChats.find((c) => c.id === id) ?? null;
 		setActiveChat(found);
+	};
+
+	const handlePreviewUpdate = (chatId: string, text: string, sentAt: string) => {
+		chatListRef.current?.updateChatPreview(chatId, text, sentAt);
+	};
+
+	const handleChatDeleted = (chatId: string) => {
+		if (activeChat?.id === chatId) {
+			setActiveChat(null);
+		}
 	};
 
 	return (
@@ -22,6 +34,7 @@ const ChatLayout = () => {
 			{/* Sidebar — always mounted so the socket stays alive */}
 			<div className={`chat-layout-sidebar ${activeChat ? "has-active" : ""}`}>
 				<ChatList
+					ref={chatListRef}
 					activeChatId={activeChat?.id}
 					onSelectChat={(id, allChats) => handleSelectChat(id, allChats)}
 				/>
@@ -33,6 +46,8 @@ const ChatLayout = () => {
 					<ChatRoom
 						chat={activeChat}
 						onBack={() => setActiveChat(null)}
+						onPreviewUpdate={handlePreviewUpdate}
+						onChatDeleted={handleChatDeleted}
 					/>
 				) : (
 					<div className="chat-layout-empty">

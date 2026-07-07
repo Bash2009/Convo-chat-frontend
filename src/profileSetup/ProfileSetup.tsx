@@ -10,6 +10,7 @@ import StepReview from "./StepReview";
 import "./ProfileSetup.css";
 import api from "../backend";
 import { useNavigate } from "react-router-dom";
+import { useErrorModal, getFriendlyErrorMessage } from "../ErrorModal";
 
 const STEP_LABELS = [
 	"Getting started",
@@ -25,7 +26,7 @@ const EMPTY_DATA: ProfileData = {
 	username: "",
 	bio: "",
 	location: "",
-	website: "",
+
 	avatarFile: null,
 	avatarPreview: "",
 };
@@ -40,15 +41,13 @@ const validateIdentity = (data: ProfileData): ProfileErrors => {
 	return e;
 };
 
-const validateAbout = (data: ProfileData): ProfileErrors => {
-	const e: ProfileErrors = {};
-	if (data.website && !/^https?:\/\/.+\..+/.test(data.website))
-		e.website = "Enter a valid URL starting with https://";
-	return e;
+const validateAbout = (_data: ProfileData): ProfileErrors => {
+	return {};
 };
 
 const ProfileSetup = () => {
 	const navigate = useNavigate();
+	const { showError } = useErrorModal();
 	const [step, setStep] = useState(0);
 	const [slideDir, setSlideDir] = useState<"forward" | "back">("forward");
 	const [isAnimating, setAnim] = useState(false);
@@ -102,7 +101,7 @@ const ProfileSetup = () => {
 			);
 
 			if (checkUsername.data.userExists) {
-				alert("User with this username already exists");
+				showError("A user with this username already exists. Please choose a different one.");
 				return;
 			}
 		}
@@ -124,7 +123,7 @@ const ProfileSetup = () => {
 			formData.append("userName", data.username);
 			formData.append("bio", data.bio);
 			formData.append("location", data.location);
-			formData.append("website", data.website);
+
 
 			if (data.avatarFile) formData.append("avatar", data.avatarFile);
 			else if (data.avatarPreview)
@@ -134,12 +133,7 @@ const ProfileSetup = () => {
 
 			navigate("/chats");
 		} catch (err: unknown) {
-			const message =
-				err instanceof Error
-					? (err as Error & { response?: { data?: { message?: string } } }).response
-							?.data?.message ?? err.message
-					: String(err);
-			alert(`Could not save profile: ${message}`);
+			showError(`Could not save your profile. ${getFriendlyErrorMessage(err)}`);
 		} finally {
 			setSubmit(false);
 		}
