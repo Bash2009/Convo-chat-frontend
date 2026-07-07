@@ -30,7 +30,7 @@ const Chat = ({
 	onSelectChat: (id: string) => void;
 	i: number;
 	fullName: string;
-	p: { online?: boolean } | undefined;
+	p: { firstName: string; lastName: string; username: string; avatarUrl: string; online?: boolean } | undefined;
 	avatarUrl?: string;
 	isGroup: boolean;
 }) => {
