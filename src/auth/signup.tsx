@@ -68,22 +68,18 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 
 		const user = userCredentials?.user;
 		if (user) {
-			console.log("User created:", user);
-			const response = await api
-				.post("/auth/register", {
+			try {
+				const { data } = await api.post("/auth/register", {
 					email,
 					uid: user.uid,
-				})
-				.then(({ data }) => {
-					localStorage.setItem("access_token", data.access_token);
-					localStorage.setItem("refresh_token", data.refresh_token);
-					navigate("/verify-email");
-				})
-				.catch((err) => {
-					alert(err);
-					signOut(auth);
 				});
-			console.log(response);
+				localStorage.setItem("access_token", data.access_token);
+				localStorage.setItem("refresh_token", data.refresh_token);
+				navigate("/verify-email");
+			} catch (err) {
+				alert(err);
+				await signOut(auth);
+			}
 		}
 		// await sendEmailVerification(user!).catch((error) => {
 		// 	console.log(`Error ${error.code}: ${error.message}`);

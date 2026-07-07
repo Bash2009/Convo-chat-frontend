@@ -62,15 +62,17 @@ const ProfileSetup = () => {
 	};
 
 	const handleFileChange = (file: File) => {
-		setData((prev) => ({
-			...prev,
-			avatarFile: file,
-			avatarPreview: URL.createObjectURL(file),
-		}));
-		console.log(file);
-		console.log("====================================");
-		console.log(URL.createObjectURL(file));
-		console.log("====================================");
+		setData((prev) => {
+			// Revoke previous blob URL to avoid memory leaks
+			if (prev.avatarPreview && prev.avatarPreview.startsWith("blob:")) {
+				URL.revokeObjectURL(prev.avatarPreview);
+			}
+			return {
+				...prev,
+				avatarFile: file,
+				avatarPreview: URL.createObjectURL(file),
+			};
+		});
 	};
 
 	const handleBlur = (field: "firstName" | "lastName" | "username") => {
@@ -131,12 +133,13 @@ const ProfileSetup = () => {
 			await api.post("/profile/create", formData, {});
 
 			navigate("/chats");
-		} catch (err: any) {
-			alert(
-				`Could not save profile: ${
-					err.response?.data?.message ?? err.message
-				}`
-			);
+		} catch (err: unknown) {
+			const message =
+				err instanceof Error
+					? (err as Error & { response?: { data?: { message?: string } } }).response
+							?.data?.message ?? err.message
+					: String(err);
+			alert(`Could not save profile: ${message}`);
 		} finally {
 			setSubmit(false);
 		}

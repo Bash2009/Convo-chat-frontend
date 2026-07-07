@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ChatList from "./ChatList";
-import ChatRoom from "./ChatRoom";          // ← was ./components/ChatRoom (wrong path)
+import ChatRoom from "./ChatRoom";
 import type { ChatStructure } from "./constants";
 
 import "./ChatLayout.css";
