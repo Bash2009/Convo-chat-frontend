@@ -1,4 +1,19 @@
 import { Avatar } from "./Avatar";
+import type { ChatStructure } from "../constants";
+
+// Pure time-formatting helper — no component state, no Date.now() in render.
+const formatTime = (iso: string): string => {
+	if (!iso) return "";
+	const now = Date.now();
+	const diff  = now - new Date(iso).getTime();
+	const mins  = Math.floor(diff / 60_000);
+	const hours = Math.floor(diff / 3_600_000);
+	if (mins  < 1)  return "now";
+	if (mins  < 60) return `${mins}m`;
+	if (hours < 24) return `${hours}h`;
+	if (hours < 48) return "Yesterday";
+	return new Date(iso).toLocaleDateString("en-US", { weekday: "short" });
+};
 
 const Chat = ({
 	chat,
@@ -10,26 +25,15 @@ const Chat = ({
 	avatarUrl,
 	isGroup,
 }: {
-	chat: any;
+	chat: ChatStructure;
 	activeChatId: string;
 	onSelectChat: (id: string) => void;
 	i: number;
 	fullName: string;
-	p: any;
+	p: { online?: boolean } | undefined;
 	avatarUrl?: string;
 	isGroup: boolean;
 }) => {
-	const formatTime = (iso: string): string => {
-		if (!iso) return "";
-		const diff  = Date.now() - new Date(iso).getTime();
-		const mins  = Math.floor(diff / 60_000);
-		const hours = Math.floor(diff / 3_600_000);
-		if (mins  < 1)  return "now";
-		if (mins  < 60) return `${mins}m`;
-		if (hours < 24) return `${hours}h`;
-		if (hours < 48) return "Yesterday";
-		return new Date(iso).toLocaleDateString("en-US", { weekday: "short" });
-	};
 
 	// The entire row is clickable — including the avatar area.
 	// Avatar's onClick is removed so stopPropagation never swallows the row click.

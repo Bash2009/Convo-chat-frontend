@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { auth } from "../firebase";
 import {
 	sendEmailVerification,
@@ -11,21 +11,27 @@ const VerifyEmail = () => {
 	const navigate = useNavigate();
 	const [resent, setResent] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const sentRef = useRef(false);
 
 	// Listen for if the email has been verified
 	useEffect(() => {
-		onAuthStateChanged(auth, (user) => {
+		const unsub = onAuthStateChanged(auth, (user) => {
 			if (user && user.emailVerified) {
 				navigate("/profile-setup"); // Navigate to profile setup when email is verified
 			}
 		});
-		if (!auth.currentUser) return;
-		try {
-			sendEmailVerification(auth.currentUser);
-		} catch (error: any) {
-			console.log(`Error: ${error.message}`);
+
+		// Only send verification email once per mount (not on re-renders)
+		if (!sentRef.current && auth.currentUser) {
+			sentRef.current = true;
+			sendEmailVerification(auth.currentUser).catch((error: unknown) => {
+				const msg = error instanceof Error ? error.message : String(error);
+				console.error("Send verification email failed:", msg);
+			});
 		}
-	}, []);
+
+		return unsub;
+	}, [navigate]);
 
 	const handleResend = async () => {
 		if (!auth.currentUser) return;
@@ -34,8 +40,9 @@ const VerifyEmail = () => {
 		try {
 			await sendEmailVerification(auth.currentUser);
 			setResent(true);
-		} catch (error: any) {
-			console.log(`Error: ${error.message}`);
+		} catch (error: unknown) {
+			const msg = error instanceof Error ? error.message : String(error);
+			console.error("Resend verification email failed:", msg);
 		} finally {
 			setLoading(false);
 		}

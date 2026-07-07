@@ -55,7 +55,6 @@ const Login = ({ handleChange }: LoginProps) => {
 
 		const user = userCredentials?.user;
 		if (user) {
-			console.log(user);
 			if (!user.emailVerified) {
 				navigate(`/verify-email`);
 				return;

@@ -118,6 +118,7 @@ const ChatRoom = ({ chat, onBack }: Props) => {
 	// ── Socket events (room-scoped only) ──────────────────────────────────────
 
 	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- reset state on chat switch
 		setLoading(true);
 		setMessages([]);
 

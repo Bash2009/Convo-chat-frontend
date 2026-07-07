@@ -101,6 +101,8 @@ const ChatList = ({
 		return () => document.removeEventListener("mousedown", handler);
 	}, []);
 
+	// Reset user search status when modal opens/closes
+	// eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on modal change
 	useEffect(() => { setUserStatus("idle"); }, [modal]);
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
