@@ -77,6 +77,7 @@ const ProfileEdit = () => {
       formData.append("bio", bio);
       formData.append("location", location);
       if (avatarFile) formData.append("avatar", avatarFile);
+      else if (avatarPreview) formData.append("avatarUrl", avatarPreview);
 
       await api.patch(`/profile/update/${auth.currentUser?.uid}`, formData);
       navigate("/chats");
