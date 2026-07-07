@@ -150,12 +150,14 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 			},
 		);
 
-		// Confirm deletion from server before closing the room
-		socket.on("chatDeleted", ({ id }: { id: string }) => {
+		// Confirm deletion from server before closing the room.
+		// Store the handler so cleanup removes only this callback — not the sidebar's.
+		const onChatDeletedHandler = ({ id }: { id: string }) => {
 			if (id === chat.id) {
 				onChatDeleted?.(id);
 			}
-		});
+		};
+		socket.on("chatDeleted", onChatDeletedHandler);
 
 		// Mark existing messages as read when the room opens
 		socket.emit("markRead", { chatId: chat.id, uid: currentUid });
@@ -165,7 +167,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 			socket.off("messages");
 			socket.off("newMessage");
 			socket.off("messageStatus");
-			socket.off("chatDeleted");
+			socket.off("chatDeleted", onChatDeletedHandler);
 		};
 	}, [chat.id, currentUid]);
 
