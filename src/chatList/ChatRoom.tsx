@@ -92,7 +92,6 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 	const [input, setInput]       = useState("");
 	const [loading, setLoading]   = useState(true);
 	const [loadingMore, setLoadingMore] = useState(false);
-	const [page, setPage]         = useState(0);
 	const [hasMore, setHasMore]   = useState(true);
 	const [showActions, setShowActions] = useState(false);
 	const [showAddMember, setShowAddMember] = useState(false);
@@ -120,10 +119,6 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 
 	useEffect(() => {
 		chatIdRef.current = chat.id;
-		setLoading(true);
-		setMessages([]);
-		setPage(0);
-		setHasMore(true);
 		pageRef.current = 0;
 
 		socket.emit("joinChat", { chatId: chat.id });
@@ -195,7 +190,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 			socket.off("messagesRead", handleMessagesRead);
 			socket.off("reconnect", handleReconnect);
 		};
-	}, [chat.id, currentUid]);
+	}, [chat.id, currentUid, onChatDeleted, onPreviewUpdate]);
 
 	useEffect(() => {
 		if (wasNearBottom.current) {
@@ -211,7 +206,6 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 			if (el.scrollTop < 80 && hasMore && !loadingMore && !loading) {
 				const nextPage = pageRef.current + 1;
 				pageRef.current = nextPage;
-				setPage(nextPage);
 				setLoadingMore(true);
 				socket.emit("loadMoreMessages", { chatId: chat.id, page: nextPage });
 			}

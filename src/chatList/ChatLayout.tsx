@@ -40,6 +40,7 @@ const ChatLayout = () => {
 			<div className={`chat-layout-room ${activeChat ? "visible" : ""}`}>
 				{activeChat ? (
 					<ChatRoom
+						key={activeChat.id}
 						chat={activeChat}
 						onBack={handleBack}
 						onPreviewUpdate={handlePreviewUpdate}
