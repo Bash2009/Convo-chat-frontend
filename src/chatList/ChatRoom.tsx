@@ -173,12 +173,6 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		};
 	}, [chat.id, currentUid]);
 
-	const isNearBottom = useCallback(() => {
-		const el = bottomRef.current?.parentElement;
-		if (!el) return true;
-		return el.scrollHeight - el.scrollTop - el.clientHeight < 150;
-	}, []);
-
 	useEffect(() => {
 		if (wasNearBottom.current) {
 			bottomRef.current?.scrollIntoView({ behavior: "smooth" });

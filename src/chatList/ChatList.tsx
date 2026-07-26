@@ -92,9 +92,15 @@ const ChatList = forwardRef(function ChatList(
 			);
 		};
 
-		const handleUserSearch = (data: { userExists: boolean; profile?: { user: { uid: string } } }) => {
+		const handleUserSearch = (data: { userExists: boolean; profile?: { firstName: string; lastName: string; username: string; avatarUrl: string; user: { uid: string } } }) => {
 			if (data.userExists && data.profile) {
-				setFoundUser({ ...data.profile, uid: data.profile.user.uid } as Participant);
+				setFoundUser({
+					uid: data.profile.user.uid,
+					firstName: data.profile.firstName,
+					lastName: data.profile.lastName,
+					username: data.profile.username,
+					avatarUrl: data.profile.avatarUrl,
+				});
 				setUserStatus("found");
 			} else {
 				setUserStatus("not_found");
