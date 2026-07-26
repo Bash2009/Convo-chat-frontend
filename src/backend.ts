@@ -2,14 +2,55 @@ import { io } from "socket.io-client";
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
-// ── Fetch wrapper (replaces axios) ────────────────────────────────────────────
+// ── In-memory token storage (never persisted to localStorage) ─────────────────
+let accessToken: string | null = null;
+let refreshPromise: Promise<boolean> | null = null;
+
+export function setTokens(access: string) {
+	accessToken = access;
+}
+
+export function clearTokens() {
+	accessToken = null;
+	refreshPromise = null;
+}
+
+export function getAccessToken(): string | null {
+	return accessToken;
+}
+
+// ── Refresh mutex: only one refresh at a time ─────────────────────────────────
+async function doRefresh(): Promise<boolean> {
+	try {
+		const res = await fetch(`${BASE_URL}/auth/refresh`, {
+			method: "POST",
+			credentials: "include",
+		});
+		if (res.ok) {
+			const data = await res.json();
+			setTokens(data.access_token);
+			updateSocketAuth();
+			return true;
+		}
+		return false;
+	} catch {
+		return false;
+	}
+}
+
+async function refreshWithMutex(): Promise<boolean> {
+	if (refreshPromise) return refreshPromise;
+	refreshPromise = doRefresh().finally(() => { refreshPromise = null; });
+	return refreshPromise;
+}
+
+// ── Fetch wrapper ─────────────────────────────────────────────────────────────
 
 async function request(method: string, path: string, body?: unknown, opts?: { headers?: Record<string, string> }): Promise<Response> {
-	const token = localStorage.getItem("access_token");
 	const headers: Record<string, string> = {
 		...(opts?.headers ?? {}),
 	};
-	if (token) headers["Authorization"] = `Bearer ${token}`;
+	if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
 	if (body && !(body instanceof FormData)) {
 		headers["Content-Type"] = "application/json";
 	}
@@ -17,30 +58,21 @@ async function request(method: string, path: string, body?: unknown, opts?: { he
 	const res = await fetch(`${BASE_URL}${path}`, {
 		method,
 		headers,
+		credentials: "include",
 		body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
 	});
 
 	if (res.status === 401) {
-		const refreshToken = localStorage.getItem("refresh_token");
-		if (refreshToken) {
-			const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
-				method: "POST",
-				headers: { Authorization: `Bearer ${refreshToken}` },
+		const refreshed = await refreshWithMutex();
+		if (refreshed) {
+			headers["Authorization"] = `Bearer ${accessToken}`;
+			const retryRes = await fetch(`${BASE_URL}${path}`, {
+				method, headers, credentials: "include",
+				body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
 			});
-			if (refreshRes.ok) {
-				const data = await refreshRes.json();
-				localStorage.setItem("access_token", data.access_token);
-				localStorage.setItem("refresh_token", data.refresh_token);
-				updateSocketAuth();
-				headers["Authorization"] = `Bearer ${data.access_token}`;
-				const retryRes = await fetch(`${BASE_URL}${path}`, { method, headers, body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined });
-				return retryRes;
-			} else {
-				await logout();
-			}
-		} else {
-			await logout();
+			return retryRes;
 		}
+		await logout();
 	}
 
 	return res;
@@ -59,7 +91,7 @@ export default api;
 // ── Socket singleton ──────────────────────────────────────────────────────────
 
 function getSocketAuth() {
-	return { token: localStorage.getItem("access_token") };
+	return { token: accessToken };
 }
 
 function updateSocketAuth() {
@@ -85,19 +117,15 @@ import { signOut } from "firebase/auth";
 import { auth } from "./firebase";
 
 export const logout = async () => {
-	const refreshToken = localStorage.getItem("refresh_token");
 	try {
-		if (refreshToken) {
-			await fetch(`${BASE_URL}/auth/logout`, {
-				method: "POST",
-				headers: { Authorization: `Bearer ${refreshToken}` },
-			});
-		}
+		await fetch(`${BASE_URL}/auth/logout`, {
+			method: "POST",
+			credentials: "include",
+		});
 	} catch {
 		// Best-effort — clear locally regardless of server response
 	} finally {
-		localStorage.removeItem("access_token");
-		localStorage.removeItem("refresh_token");
+		clearTokens();
 		socket.disconnect();
 		await signOut(auth);
 	}

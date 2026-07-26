@@ -1,7 +1,7 @@
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { auth } from "../firebase";
-import api from "../backend";
+import api, { setTokens } from "../backend";
 import { useNavigate } from "react-router-dom";
 import { useErrorModal, getFriendlyErrorMessage } from "../ErrorModal";
 
@@ -66,8 +66,7 @@ const Login = ({ handleChange }: LoginProps) => {
 					uid: user.uid,
 					firebaseToken: await user.getIdToken(),
 				});
-				localStorage.setItem("access_token", data.access_token);
-				localStorage.setItem("refresh_token", data.refresh_token);
+				setTokens(data.access_token);
 				checkProfile(user.uid);
 			} catch {
 				showError("Login failed. Please try again.");

@@ -91,6 +91,9 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput]       = useState("");
 	const [loading, setLoading]   = useState(true);
+	const [loadingMore, setLoadingMore] = useState(false);
+	const [page, setPage]         = useState(0);
+	const [hasMore, setHasMore]   = useState(true);
 	const [showActions, setShowActions] = useState(false);
 	const [showAddMember, setShowAddMember] = useState(false);
 	const actionsRef = useRef<HTMLDivElement>(null);
@@ -98,6 +101,8 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 	const inputRef  = useRef<HTMLTextAreaElement>(null);
 	const chatIdRef = useRef(chat.id);
 	const wasNearBottom = useRef(true);
+	const messagesRef = useRef<HTMLDivElement>(null);
+	const pageRef = useRef(0);
 
 	const otherParticipant = useMemo(() => !chat.isGroup
 		? chat.participants.find((p) => p.user.uid !== currentUid)?.user ?? null
@@ -117,12 +122,29 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		chatIdRef.current = chat.id;
 		setLoading(true);
 		setMessages([]);
+		setPage(0);
+		setHasMore(true);
+		pageRef.current = 0;
 
 		socket.emit("joinChat", { chatId: chat.id });
 
 		const handleMessages = (msgs: Message[]) => {
 			setMessages(msgs);
+			setHasMore(msgs.length === 50);
 			setLoading(false);
+		};
+
+		const handleMoreMessages = (msgs: Message[]) => {
+			if (msgs.length < 50) setHasMore(false);
+			const prevHeight = messagesRef.current?.scrollHeight ?? 0;
+			setMessages((prev) => [...msgs, ...prev]);
+			setLoadingMore(false);
+			requestAnimationFrame(() => {
+				if (messagesRef.current) {
+					const newHeight = messagesRef.current.scrollHeight;
+					messagesRef.current.scrollTop = newHeight - prevHeight;
+				}
+			});
 		};
 
 		const handleNewMessage = (msg: Message) => {
@@ -154,6 +176,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		};
 
 		socket.on("messages", handleMessages);
+		socket.on("moreMessages", handleMoreMessages);
 		socket.on("newMessage", handleNewMessage);
 		socket.on("messageStatus", handleMessageStatus);
 		socket.on("chatDeleted", handleChatDeleted);
@@ -165,6 +188,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		return () => {
 			socket.emit("leaveChat", { chatId: chat.id });
 			socket.off("messages", handleMessages);
+			socket.off("moreMessages", handleMoreMessages);
 			socket.off("newMessage", handleNewMessage);
 			socket.off("messageStatus", handleMessageStatus);
 			socket.off("chatDeleted", handleChatDeleted);
@@ -180,14 +204,21 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 	}, [messages]);
 
 	useEffect(() => {
-		const el = bottomRef.current?.parentElement;
+		const el = messagesRef.current;
 		if (!el) return;
 		const handleScroll = () => {
 			wasNearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+			if (el.scrollTop < 80 && hasMore && !loadingMore && !loading) {
+				const nextPage = pageRef.current + 1;
+				pageRef.current = nextPage;
+				setPage(nextPage);
+				setLoadingMore(true);
+				socket.emit("loadMoreMessages", { chatId: chat.id, page: nextPage });
+			}
 		};
 		el.addEventListener("scroll", handleScroll, { passive: true });
 		return () => el.removeEventListener("scroll", handleScroll);
-	}, []);
+	}, [chat.id, hasMore, loadingMore, loading]);
 
 	useEffect(() => {
 		const handler = (e: MouseEvent) => {
@@ -313,7 +344,8 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 				/>
 			)}
 
-			<div className="chatroom-messages">
+			<div className="chatroom-messages" ref={messagesRef}>
+				{loadingMore && <p className="chatroom-loading">Loading older messages…</p>}
 				{loading && <p className="chatroom-loading">Loading…</p>}
 
 				{!loading && messages.length === 0 && (

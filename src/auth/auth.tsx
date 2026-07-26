@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
+import { getAccessToken } from "../backend";
 import Forms from "./forms";
 
 const Auth = () => {
@@ -10,8 +11,7 @@ const Auth = () => {
 
 	useEffect(() => {
 		const unsub = onAuthStateChanged(auth, async (user) => {
-			if (user && localStorage.getItem("access_token")) {
-				// Already logged in — skip the auth screen
+			if (user && getAccessToken()) {
 				navigate("/chats", { replace: true });
 			}
 			setChecking(false);
