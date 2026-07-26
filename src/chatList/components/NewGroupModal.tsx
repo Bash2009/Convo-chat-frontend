@@ -1,7 +1,15 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import type { NewGroupModalProps, Participant } from "../constants";
 import { auth } from "../../firebase";
+
+function useDebounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
+	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	return useCallback((...args: any[]) => {
+		if (timer.current) clearTimeout(timer.current);
+		timer.current = setTimeout(() => fn(...args), delay);
+	}, [fn, delay]) as unknown as T;
+}
 
 export const NewGroupModal = ({
 	onClose,
@@ -13,10 +21,11 @@ export const NewGroupModal = ({
 	const [groupName, setGroupName] = useState("");
 	const [query, setQuery] = useState("");
 	const [selected, setSelected] = useState<Participant[]>([]);
+	const debouncedSearch = useDebounce(onSearch, 300);
 
 	const handleQueryChange = (value: string) => {
 		setQuery(value);
-		if (value.trim().length >= 1) onSearch(value.trim());
+		if (value.trim().length >= 1) debouncedSearch(value.trim());
 	};
 
 	const addParticipant = (p: Participant) => {
@@ -76,6 +85,9 @@ export const NewGroupModal = ({
 								<img
 									src={foundUser.avatarUrl}
 									alt={foundUser.firstName}
+									width={36}
+									height={36}
+									loading="lazy"
 									className="ncm-avatar"
 								/>
 							) : (

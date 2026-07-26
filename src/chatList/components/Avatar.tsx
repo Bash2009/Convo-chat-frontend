@@ -1,3 +1,5 @@
+import { memo, useMemo, useState, useCallback } from "react";
+
 interface AvatarProps {
 	name: string;
 	avatarUrl?: string;
@@ -6,20 +8,23 @@ interface AvatarProps {
 	onClick?: (e: React.MouseEvent) => void;
 }
 
-export const Avatar = ({
+export const Avatar = memo(({
 	name,
 	avatarUrl,
 	online,
 	size = 44,
 	onClick,
 }: AvatarProps) => {
-	const initials = name
+	const [imgError, setImgError] = useState(false);
+	const initials = useMemo(() => name
 		.split(" ")
 		.map((n) => n[0])
 		.join("")
 		.slice(0, 2)
-		.toUpperCase();
-	const hue = name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
+		.toUpperCase(), [name]);
+	const hue = useMemo(() => name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360, [name]);
+	const handleError = useCallback(() => setImgError(true), []);
+
 	return (
 		<div
 			style={{
@@ -30,13 +35,15 @@ export const Avatar = ({
 			onClick={onClick}
 			title={onClick ? `View ${name}'s profile` : undefined}
 		>
-			{avatarUrl ? (
+			{avatarUrl && !imgError ? (
 				<img
 					src={avatarUrl}
 					alt={name}
+					width={size}
+					height={size}
+					loading="lazy"
+					onError={handleError}
 					style={{
-						width: size,
-						height: size,
 						borderRadius: "50%",
 						objectFit: "cover",
 						display: "block",
@@ -77,4 +84,4 @@ export const Avatar = ({
 			)}
 		</div>
 	);
-};
+});

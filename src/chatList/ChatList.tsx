@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, forwardRef, useImperativeHandle } from "react";
 import { socket } from "../backend";
 import { logout } from "../backend";
 import { NewChatModal } from "./components/NewChatModal";
@@ -32,8 +32,8 @@ const ChatList = forwardRef(function ChatList(
 	const [userStatus, setUserStatus] = useState<UserStatus>("idle");
 	const [foundUser, setFoundUser]   = useState<Participant>();
 	const dropdownRef = useRef<HTMLDivElement>(null);
+	const uidRef = useRef<string | null>(null);
 
-	// Expose updateChatPreview so ChatRoom can update the list when new messages arrive
 	useImperativeHandle(ref, () => ({
 		updateChatPreview(chatId: string, text: string, sentAt: string) {
 			setChats((prev) =>
@@ -47,56 +47,61 @@ const ChatList = forwardRef(function ChatList(
 	}));
 
 	// ── Socket lifecycle ──────────────────────────────────────────────────────
-	// ChatList owns the single shared socket. ChatRoom never calls connect/disconnect.
 
 	useEffect(() => {
-		socket.connect();
-		socket.emit("getChats", { username: auth.currentUser?.uid });
+		const uid = auth.currentUser?.uid;
+		if (!uid) return;
+		uidRef.current = uid;
 
-		// Deduplicate by id to guard against StrictMode double-fire in dev
-		socket.on("chats", (data: ChatStructure[]) => {
+		socket.connect();
+		socket.emit("getChats", { username: uid });
+
+		const handleChats = (data: ChatStructure[]) => {
 			setChats((prev) => {
-				const existingIds = new Set(prev.map((c) => c.id));
-				const fresh = data.filter((c) => !existingIds.has(c.id));
-				return [...prev, ...fresh];
+				const updateMap = new Map(data.map((c) => [c.id, c]));
+				const merged = prev.map((c) => updateMap.get(c.id) ?? c);
+				for (const c of data) {
+					if (!merged.some((m) => m.id === c.id)) {
+						merged.push(c);
+					}
+				}
+				return merged;
 			});
 			setLoading(false);
-		});
+		};
 
-		socket.on("connect_error", () => {
+		const handleConnectError = () => {
 			setError("Couldn't load conversations.");
 			setLoading(false);
-		});
+		};
 
-		socket.on("chatCreated", (newChat: ChatStructure) => {
+		const handleChatCreated = (newChat: ChatStructure) => {
 			setChats((prev) => {
-				// Don't add if it already exists (e.g. from a race condition)
 				if (prev.some((c) => c.id === newChat.id)) return prev;
 				return [newChat, ...prev];
 			});
-		});
+		};
 
-		socket.on("chatDeleted", ({ id }: { id: string }) => {
+		const handleChatDeleted = ({ id }: { id: string }) => {
 			setChats((prev) => prev.filter((c) => c.id !== id));
-		});
+		};
 
-		socket.on("memberAdded", (updatedChat: ChatStructure) => {
+		const handleMemberAdded = (updatedChat: ChatStructure) => {
 			setChats((prev) =>
 				prev.map((c) => (c.id === updatedChat.id ? updatedChat : c)),
 			);
-		});
+		};
 
-		socket.on("userSearch", (data) => {
-			if (data.userExists) {
-				setFoundUser({ ...data.profile, uid: data.profile.user.uid });
+		const handleUserSearch = (data: { userExists: boolean; profile?: { user: { uid: string } } }) => {
+			if (data.userExists && data.profile) {
+				setFoundUser({ ...data.profile, uid: data.profile.user.uid } as Participant);
 				setUserStatus("found");
 			} else {
 				setUserStatus("not_found");
 			}
-		});
+		};
 
-		// Keep chat list preview fresh when any room receives a new message
-		socket.on("newMessage", (msg: { chatId: string; text: string; sentAt: string }) => {
+		const handleNewMessage = (msg: { chatId: string; text: string; sentAt: string }) => {
 			setChats((prev) =>
 				prev.map((c) =>
 					c.id === msg.chatId
@@ -104,27 +109,39 @@ const ChatList = forwardRef(function ChatList(
 						: c,
 				),
 			);
-		});
+		};
 
-		// Surface server-side socket errors to the user
-		socket.on("error", (err: { event: string; message: string }) => {
+		const handleError = (err: { event: string; message: string }) => {
 			showError(err.message || `Something went wrong while processing "${err.event}".`);
-		});
+		};
+
+		const handleReconnect = () => {
+			socket.emit("getChats", { username: uidRef.current });
+		};
+
+		socket.on("chats", handleChats);
+		socket.on("connect_error", handleConnectError);
+		socket.on("chatCreated", handleChatCreated);
+		socket.on("chatDeleted", handleChatDeleted);
+		socket.on("memberAdded", handleMemberAdded);
+		socket.on("userSearch", handleUserSearch);
+		socket.on("newMessage", handleNewMessage);
+		socket.on("error", handleError);
+		socket.on("reconnect", handleReconnect);
 
 		return () => {
-			socket.off("chats");
-			socket.off("connect_error");
-			socket.off("chatCreated");
-			socket.off("chatDeleted");
-			socket.off("memberAdded");
-			socket.off("userSearch");
-			socket.off("newMessage");
-			socket.off("error");
+			socket.off("chats", handleChats);
+			socket.off("connect_error", handleConnectError);
+			socket.off("chatCreated", handleChatCreated);
+			socket.off("chatDeleted", handleChatDeleted);
+			socket.off("memberAdded", handleMemberAdded);
+			socket.off("userSearch", handleUserSearch);
+			socket.off("newMessage", handleNewMessage);
+			socket.off("error", handleError);
+			socket.off("reconnect", handleReconnect);
 			socket.disconnect();
 		};
 	}, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-	// ── Dropdown close on outside click ──────────────────────────────────────
 
 	useEffect(() => {
 		const handler = (e: MouseEvent) => {
@@ -135,18 +152,17 @@ const ChatList = forwardRef(function ChatList(
 		return () => document.removeEventListener("mousedown", handler);
 	}, []);
 
-	// Reset user search status when modal opens/closes
-	// eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on modal change
+	// eslint-disable-next-line react-hooks/set-state-in-effect
 	useEffect(() => { setUserStatus("idle"); }, [modal]);
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 
-	const handlePrivateChat = (uid: string) => {
+	const handlePrivateChat = useCallback((uid: string) => {
 		socket.emit("createChat", { members: [auth.currentUser?.uid, uid] });
 		setModal(null);
-	};
+	}, []);
 
-	const handleGroupChat = (name: string, participants: { uid: string }[]) => {
+	const handleGroupChat = useCallback((name: string, participants: { uid: string }[]) => {
 		socket.emit("createChat", {
 			name,
 			members: participants.map((p) => p.uid),
@@ -154,30 +170,63 @@ const ChatList = forwardRef(function ChatList(
 			admin: auth.currentUser?.uid,
 		});
 		setModal(null);
-	};
+	}, []);
 
-	const handleSearch = (username: string) => {
+	const handleSearch = useCallback((username: string) => {
 		setUserStatus("loading");
 		socket.emit("getUser", { username });
-	};
+	}, []);
 
-	const handleLogout = async () => {
+	const handleLogout = useCallback(async () => {
 		await logout();
 		navigate("/");
-	};
+	}, [navigate]);
 
-	// ── Filter ────────────────────────────────────────────────────────────────
+	const handleSelectChat = useCallback((id: string) => {
+		onSelectChat(id, chats);
+	}, [onSelectChat, chats]);
 
-	const filtered = chats.filter((c) => {
+	const currentUid = auth.currentUser?.uid;
+
+	const filtered = useMemo(() => chats.filter((c) => {
 		const q = search.toLowerCase();
 		if (c.isGroup) return c.name.toLowerCase().includes(q);
-		const participant = c.participants.find((p) => p.user.uid !== auth.currentUser?.uid);
+		const participant = c.participants.find((p) => p.user.uid !== currentUid);
 		if (!participant) return false;
 		const { firstName, lastName, username } = participant.user.profile;
-		return `${firstName} ${lastName}`.toLowerCase().includes(q) || username.includes(q);
-	});
+		return `${firstName} ${lastName}`.toLowerCase().includes(q) || username.toLowerCase().includes(q);
+	}), [chats, search, currentUid]);
 
-	// ── Render ────────────────────────────────────────────────────────────────
+	const chatItems = useMemo(() => filtered.map((chat) => {
+		let fullName = "";
+		let avatarUrl = "";
+		let participant;
+
+		if (chat.isGroup) {
+			fullName = chat.name;
+			avatarUrl = chat.avatarUrl;
+		} else {
+			participant = chat.participants.find(
+				(p) => p.user.uid !== currentUid,
+			);
+			const profile = participant?.user.profile;
+			fullName = `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim();
+			avatarUrl = profile?.avatarUrl ?? "";
+		}
+
+		return (
+			<Chat
+				key={chat.id}
+				chat={chat}
+				activeChatId={activeChatId!}
+				onSelectChat={handleSelectChat}
+				fullName={fullName}
+				p={chat.isGroup ? undefined : participant?.user.profile}
+				avatarUrl={avatarUrl}
+				isGroup={chat.isGroup}
+			/>
+		);
+	}), [filtered, activeChatId, handleSelectChat, currentUid]);
 
 	return (
 		<>
@@ -266,37 +315,7 @@ const ChatList = forwardRef(function ChatList(
 						<p className="chatlist-status">No conversations found.</p>
 					)}
 
-					{filtered.map((chat, i) => {
-						let fullName = "";
-						let avatarUrl = "";
-						let participant;
-
-						if (chat.isGroup) {
-							fullName  = chat.name;
-							avatarUrl = chat.avatarUrl;
-						} else {
-							participant = chat.participants.find(
-								(p) => p.user.uid !== auth.currentUser?.uid,
-							);
-							const profile = participant?.user.profile;
-							fullName  = `${profile?.firstName} ${profile?.lastName}`;
-							avatarUrl = profile?.avatarUrl ?? "";
-						}
-
-						return (
-							<Chat
-								key={chat.id}
-								chat={chat}
-								activeChatId={activeChatId!}
-								onSelectChat={(id) => onSelectChat(id, chats)}
-								i={i}
-								fullName={fullName}
-								p={chat.isGroup ? undefined : participant?.user.profile}
-								avatarUrl={avatarUrl}
-								isGroup={chat.isGroup}
-							/>
-						);
-					})}
+					{chatItems}
 				</div>
 			</div>
 		</>

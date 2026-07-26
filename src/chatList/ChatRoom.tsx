@@ -1,12 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../backend";
 import { Avatar } from "./components/Avatar";
 import { auth } from "../firebase";
 import type { ChatStructure } from "./constants";
 import { AddMemberModal } from "./components/AddMemberModal";
-
-// ── Types ──────────────────────────────────────────────────────────────────
 
 interface Message {
 	id: string;
@@ -22,8 +20,6 @@ interface Props {
 	onPreviewUpdate?: (chatId: string, text: string, sentAt: string) => void;
 	onChatDeleted?: (chatId: string) => void;
 }
-
-// ── Helpers ────────────────────────────────────────────────────────────────
 
 const formatMsgTime = (iso: string) =>
 	new Date(iso).toLocaleTimeString("en-US", {
@@ -48,8 +44,6 @@ const formatDayLabel = (iso: string) => {
 		day: "numeric",
 	});
 };
-
-// ── Tick icon ──────────────────────────────────────────────────────────────
 
 const StatusTick = ({ status }: { status: Message["status"] }) => {
 	const color   = status === "read" ? "#191970" : "currentColor";
@@ -90,10 +84,6 @@ const StatusTick = ({ status }: { status: Message["status"] }) => {
 	);
 };
 
-// ── ChatRoom ───────────────────────────────────────────────────────────────
-// This component does NOT own the socket connection — ChatList does.
-// ChatRoom only emits joinChat / leaveChat and listens for room-scoped events.
-
 const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 	const navigate   = useNavigate();
 	const currentUid = auth.currentUser?.uid ?? "";
@@ -106,10 +96,12 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 	const actionsRef = useRef<HTMLDivElement>(null);
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const inputRef  = useRef<HTMLTextAreaElement>(null);
+	const chatIdRef = useRef(chat.id);
+	const wasNearBottom = useRef(true);
 
-	const otherParticipant = !chat.isGroup
-		? chat.participants.find((p) => p.user.uid !== currentUid)?.user
-		: null;
+	const otherParticipant = useMemo(() => !chat.isGroup
+		? chat.participants.find((p) => p.user.uid !== currentUid)?.user ?? null
+		: null, [chat, currentUid]);
 
 	const headerName = chat.isGroup
 		? chat.name
@@ -121,62 +113,87 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		? chat.avatarUrl
 		: otherParticipant?.profile.avatarUrl ?? "";
 
-	// ── Socket events (room-scoped only) ──────────────────────────────────────
-
 	useEffect(() => {
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- reset state on chat switch
+		chatIdRef.current = chat.id;
 		setLoading(true);
 		setMessages([]);
 
-		// Join the room — server responds with 'messages' (history)
 		socket.emit("joinChat", { chatId: chat.id });
 
-		socket.on("messages", (msgs: Message[]) => {
+		const handleMessages = (msgs: Message[]) => {
 			setMessages(msgs);
 			setLoading(false);
-		});
+		};
 
-		socket.on("newMessage", (msg: Message) => {
+		const handleNewMessage = (msg: Message) => {
 			setMessages((prev) => [...prev, msg]);
 			onPreviewUpdate?.(chat.id, msg.text, msg.sentAt);
-		});
+		};
 
-		socket.on(
-			"messageStatus",
-			({ messageId, status }: { messageId: string; status: Message["status"] }) => {
-				setMessages((prev) =>
-					prev.map((m) => (m.id === messageId ? { ...m, status } : m)),
-				);
-			},
-		);
+		const handleMessageStatus = ({ messageId, status }: { messageId: string; status: Message["status"] }) => {
+			setMessages((prev) =>
+				prev.map((m) => (m.id === messageId ? { ...m, status } : m)),
+			);
+		};
 
-		// Confirm deletion from server before closing the room.
-		// Store the handler so cleanup removes only this callback — not the sidebar's.
-		const onChatDeletedHandler = ({ id }: { id: string }) => {
+		const handleChatDeleted = ({ id }: { id: string }) => {
 			if (id === chat.id) {
 				onChatDeleted?.(id);
 			}
 		};
-		socket.on("chatDeleted", onChatDeletedHandler);
 
-		// Mark existing messages as read when the room opens
+		const handleMessagesRead = ({ messageIds }: { messageIds: string[] }) => {
+			const idSet = new Set(messageIds);
+			setMessages((prev) =>
+				prev.map((m) => (idSet.has(m.id) ? { ...m, status: "read" as const } : m)),
+			);
+		};
+
+		const handleReconnect = () => {
+			socket.emit("joinChat", { chatId: chat.id });
+		};
+
+		socket.on("messages", handleMessages);
+		socket.on("newMessage", handleNewMessage);
+		socket.on("messageStatus", handleMessageStatus);
+		socket.on("chatDeleted", handleChatDeleted);
+		socket.on("messagesRead", handleMessagesRead);
+		socket.on("reconnect", handleReconnect);
+
 		socket.emit("markRead", { chatId: chat.id, uid: currentUid });
 
 		return () => {
 			socket.emit("leaveChat", { chatId: chat.id });
-			socket.off("messages");
-			socket.off("newMessage");
-			socket.off("messageStatus");
-			socket.off("chatDeleted", onChatDeletedHandler);
+			socket.off("messages", handleMessages);
+			socket.off("newMessage", handleNewMessage);
+			socket.off("messageStatus", handleMessageStatus);
+			socket.off("chatDeleted", handleChatDeleted);
+			socket.off("messagesRead", handleMessagesRead);
+			socket.off("reconnect", handleReconnect);
 		};
 	}, [chat.id, currentUid]);
 
-	// Scroll to bottom on new messages
+	const isNearBottom = useCallback(() => {
+		const el = bottomRef.current?.parentElement;
+		if (!el) return true;
+		return el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+	}, []);
+
 	useEffect(() => {
-		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+		if (wasNearBottom.current) {
+			bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+		}
 	}, [messages]);
 
-	// ── Close actions dropdown on outside click ─────────────────────────────
+	useEffect(() => {
+		const el = bottomRef.current?.parentElement;
+		if (!el) return;
+		const handleScroll = () => {
+			wasNearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+		};
+		el.addEventListener("scroll", handleScroll, { passive: true });
+		return () => el.removeEventListener("scroll", handleScroll);
+	}, []);
 
 	useEffect(() => {
 		const handler = (e: MouseEvent) => {
@@ -187,35 +204,28 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		return () => document.removeEventListener("mousedown", handler);
 	}, []);
 
-	// ── Delete chat ───────────────────────────────────────────────────────────
-
-	const handleDeleteChat = () => {
+	const handleDeleteChat = useCallback(() => {
 		if (!window.confirm("Delete this conversation? This cannot be undone.")) return;
 		socket.emit("deleteChat", { chatId: chat.id });
-	};
+	}, [chat.id]);
 
-	// ── Send ──────────────────────────────────────────────────────────────────
-
-	const sendMessage = () => {
+	const sendMessage = useCallback(() => {
 		const text = input.trim();
 		if (!text) return;
 		socket.emit("sendMessage", { chatId: chat.id, text, senderId: currentUid });
 		setInput("");
 		inputRef.current?.focus();
-	};
+	}, [input, chat.id, currentUid]);
 
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+	const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
 			sendMessage();
 		}
-	};
-
-	// ── Render ────────────────────────────────────────────────────────────────
+	}, [sendMessage]);
 
 	return (
 		<div className="chatroom-root">
-			{/* Header */}
 			<div className="chatroom-header">
 				<button
 					className="chatroom-back-btn"
@@ -252,7 +262,6 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 					</p>
 				</div>
 
-				{/* Actions dropdown */}
 				<div className="chatroom-actions-wrap" ref={actionsRef}>
 					<button
 						className="chatroom-actions-btn"
@@ -303,7 +312,6 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 				</div>
 			</div>
 
-			{/* Add member modal */}
 			{showAddMember && (
 				<AddMemberModal
 					chatId={chat.id}
@@ -311,7 +319,6 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 				/>
 			)}
 
-			{/* Messages */}
 			<div className="chatroom-messages">
 				{loading && <p className="chatroom-loading">Loading…</p>}
 
@@ -377,7 +384,6 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 				<div ref={bottomRef} />
 			</div>
 
-			{/* Input */}
 			<div className="chatroom-input-bar">
 				<textarea
 					ref={inputRef}

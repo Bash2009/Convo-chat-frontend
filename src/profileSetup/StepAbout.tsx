@@ -61,6 +61,9 @@ const StepAbout = ({ data, onChange, onFileChange }: Props) => {
                 key={url}
                 src={url}
                 alt="default avatar"
+                width={40}
+                height={40}
+                loading="lazy"
                 className={`avatar-default-opt ${data.avatarPreview === url ? "selected" : ""}`}
                 onClick={() => onChange("avatarPreview", url)}
               />

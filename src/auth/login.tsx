@@ -1,4 +1,4 @@
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { auth } from "../firebase";
 import api from "../backend";
@@ -61,31 +61,27 @@ const Login = ({ handleChange }: LoginProps) => {
 				navigate(`/verify-email`);
 				return;
 			}
-			await api
-				.post("/auth/login", {
+			try {
+				const data = await api.post("/auth/login", {
 					uid: user.uid,
-				})
-				.then(({ data }) => {
-					localStorage.setItem("access_token", data.access_token);
-					localStorage.setItem("refresh_token", data.refresh_token);
-					checkProfile(user.uid);
-				})
-				.catch((err) => {
-					console.log(err);
-					signOut(auth);
+					firebaseToken: await user.getIdToken(),
 				});
+				localStorage.setItem("access_token", data.access_token);
+				localStorage.setItem("refresh_token", data.refresh_token);
+				checkProfile(user.uid);
+			} catch {
+				showError("Login failed. Please try again.");
+			}
 		}
 	};
 
 	const checkProfile = async (uid: string) => {
-		await api
-			.get(`/profile/id/${uid}`)
-			.then(() => {
-				navigate("/chats");
-			})
-			.catch(() => {
-				navigate("/profile-setup");
-			});
+		try {
+			await api.get(`/profile/id/${uid}`);
+			navigate("/chats");
+		} catch {
+			navigate("/profile-setup");
+		}
 	};
 
 	return (

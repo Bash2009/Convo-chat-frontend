@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import ChatList from "./ChatList";
 import type { ChatListHandle } from "./ChatList";
 import ChatRoom from "./ChatRoom";
@@ -6,46 +6,42 @@ import type { ChatStructure } from "./constants";
 
 import "./ChatLayout.css";
 
-// Architecture: ChatList owns the socket (connects on mount, disconnects on unmount).
-// ChatRoom only emits joinChat / leaveChat — it never touches the connection.
-// Switching chats = instant, no reconnect needed.
-
 const ChatLayout = () => {
 	const [activeChat, setActiveChat] = useState<ChatStructure | null>(null);
 	const chatListRef = useRef<ChatListHandle>(null);
 
-	const handleSelectChat = (id: string, allChats: ChatStructure[]) => {
+	const handleSelectChat = useCallback((id: string, allChats: ChatStructure[]) => {
 		const found = allChats.find((c) => c.id === id) ?? null;
 		setActiveChat(found);
-	};
+	}, []);
 
-	const handlePreviewUpdate = (chatId: string, text: string, sentAt: string) => {
+	const handlePreviewUpdate = useCallback((chatId: string, text: string, sentAt: string) => {
 		chatListRef.current?.updateChatPreview(chatId, text, sentAt);
-	};
+	}, []);
 
-	const handleChatDeleted = (chatId: string) => {
+	const handleChatDeleted = useCallback((chatId: string) => {
 		if (activeChat?.id === chatId) {
 			setActiveChat(null);
 		}
-	};
+	}, [activeChat?.id]);
+
+	const handleBack = useCallback(() => setActiveChat(null), []);
 
 	return (
 		<div className="chat-layout">
-			{/* Sidebar — always mounted so the socket stays alive */}
 			<div className={`chat-layout-sidebar ${activeChat ? "has-active" : ""}`}>
 				<ChatList
 					ref={chatListRef}
 					activeChatId={activeChat?.id}
-					onSelectChat={(id, allChats) => handleSelectChat(id, allChats)}
+					onSelectChat={handleSelectChat}
 				/>
 			</div>
 
-			{/* Room panel */}
 			<div className={`chat-layout-room ${activeChat ? "visible" : ""}`}>
 				{activeChat ? (
 					<ChatRoom
 						chat={activeChat}
-						onBack={() => setActiveChat(null)}
+						onBack={handleBack}
 						onPreviewUpdate={handlePreviewUpdate}
 						onChatDeleted={handleChatDeleted}
 					/>

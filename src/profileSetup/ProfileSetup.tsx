@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { auth } from "../firebase";
 
 import { type ProfileData, type ProfileErrors } from "./types";
@@ -55,31 +55,41 @@ const ProfileSetup = () => {
 	const [data, setData] = useState<ProfileData>(EMPTY_DATA);
 	const [errors, setErrors] = useState<ProfileErrors>({});
 	const [touched, setTouched] = useState<Record<string, boolean>>({});
+	const blobUrlRef = useRef<string | null>(null);
+	const checkingRef = useRef(false);
 
-	const handleChange = (field: keyof ProfileData, value: string) => {
-		setData((prev) => ({ ...prev, [field]: value }));
-	};
-
-	const handleFileChange = (file: File) => {
-		setData((prev) => {
-			// Revoke previous blob URL to avoid memory leaks
-			if (prev.avatarPreview && prev.avatarPreview.startsWith("blob:")) {
-				URL.revokeObjectURL(prev.avatarPreview);
+	// Cleanup blob URL on unmount
+	useEffect(() => {
+		return () => {
+			if (blobUrlRef.current) {
+				URL.revokeObjectURL(blobUrlRef.current);
 			}
-			return {
-				...prev,
-				avatarFile: file,
-				avatarPreview: URL.createObjectURL(file),
-			};
-		});
-	};
+		};
+	}, []);
 
-	const handleBlur = (field: "firstName" | "lastName" | "username") => {
+	const handleChange = useCallback((field: keyof ProfileData, value: string) => {
+		setData((prev) => ({ ...prev, [field]: value }));
+	}, []);
+
+	const handleFileChange = useCallback((file: File) => {
+		if (blobUrlRef.current) {
+			URL.revokeObjectURL(blobUrlRef.current);
+		}
+		const url = URL.createObjectURL(file);
+		blobUrlRef.current = url;
+		setData((prev) => ({
+			...prev,
+			avatarFile: file,
+			avatarPreview: url,
+		}));
+	}, []);
+
+	const handleBlur = useCallback((field: "firstName" | "lastName" | "username") => {
 		setTouched((prev) => ({ ...prev, [field]: true }));
 		setErrors(validateIdentity(data));
-	};
+	}, [data]);
 
-	const animateTo = (dir: "forward" | "back") => {
+	const animateTo = useCallback((dir: "forward" | "back") => {
 		if (isAnimating) return;
 		setSlideDir(dir);
 		setAnim(true);
@@ -87,22 +97,27 @@ const ProfileSetup = () => {
 			setStep((s) => (dir === "forward" ? s + 1 : s - 1));
 			setAnim(false);
 		}, 220);
-	};
+	}, [isAnimating]);
 
-	const goNext = async () => {
+	const goNext = useCallback(async () => {
 		if (step === 1) {
 			const errs = validateIdentity(data);
 			setTouched({ firstName: true, lastName: true, username: true });
 			setErrors(errs);
 			if (Object.keys(errs).length > 0) return;
 
-			const checkUsername = await api.get(
-				`/profile/name/${data.username}`
-			);
-
-			if (checkUsername.data.userExists) {
-				showError("A user with this username already exists. Please choose a different one.");
-				return;
+			if (checkingRef.current) return;
+			checkingRef.current = true;
+			try {
+				const checkUsername = await api.get(
+					`/profile/name/${data.username}`
+				);
+				if (checkUsername.userExists) {
+					showError("A user with this username already exists.");
+					return;
+				}
+			} finally {
+				checkingRef.current = false;
 			}
 		}
 		if (step === 2) {
@@ -111,9 +126,9 @@ const ProfileSetup = () => {
 			if (Object.keys(errs).length > 0) return;
 		}
 		animateTo("forward");
-	};
+	}, [step, data, animateTo, showError]);
 
-	const handleSubmit = async () => {
+	const handleSubmit = useCallback(async () => {
 		setSubmit(true);
 		try {
 			const formData = new FormData();
@@ -124,20 +139,18 @@ const ProfileSetup = () => {
 			formData.append("bio", data.bio);
 			formData.append("location", data.location);
 
-
 			if (data.avatarFile) formData.append("avatar", data.avatarFile);
 			else if (data.avatarPreview)
 				formData.append("avatarUrl", data.avatarPreview);
 
 			await api.post("/profile/create", formData, {});
-
 			navigate("/chats");
 		} catch (err: unknown) {
 			showError(`Could not save your profile. ${getFriendlyErrorMessage(err)}`);
 		} finally {
 			setSubmit(false);
 		}
-	};
+	}, [data, navigate, showError]);
 
 	const steps = [
 		<StepWelcome />,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ChangeEvent } from "react";
+import { useState, useEffect, useRef, useCallback, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../backend";
 import { auth } from "../firebase";
@@ -29,16 +29,30 @@ const ProfileEdit = () => {
   const [location, setLocation]   = useState("");
   const [avatarFile, setAvatarFile]     = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState("");
+  const prevBlobUrl = useRef<string | null>(null);
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (prevBlobUrl.current) {
+        URL.revokeObjectURL(prevBlobUrl.current);
+      }
+    };
+  }, []);
 
   // Fetch current profile
   useEffect(() => {
+    const abort = new AbortController();
     const uid = auth.currentUser?.uid;
-    if (!uid) return;
+    if (!uid) {
+      setLoading(false);
+      return;
+    }
 
     api
       .get(`/profile/id/${uid}`)
-      .then((res) => {
-        const p = res.data;
+      .then((p) => {
+        if (abort.signal.aborted) return;
         setFirstName(p.firstName || "");
         setLastName(p.lastName || "");
         setUsername(p.username || "");
@@ -47,16 +61,19 @@ const ProfileEdit = () => {
         setAvatarPreview(p.avatarUrl || "");
       })
       .catch(() => {
-        // No profile exists — redirect to setup
+        if (abort.signal.aborted) return;
         navigate("/profile-setup", { replace: true });
       })
-      .finally(() => setLoading(false));
-  }, [navigate]);	const prevBlobUrl = useRef<string | null>(null);
+      .finally(() => {
+        if (!abort.signal.aborted) setLoading(false);
+      });
 
-	const handleFileInput = (e: ChangeEvent<HTMLInputElement>) => {
+    return () => abort.abort();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+	const handleFileInput = useCallback((e: ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (file) {
-			// Revoke previous blob URL to avoid memory leaks
 			if (prevBlobUrl.current) {
 				URL.revokeObjectURL(prevBlobUrl.current);
 			}
@@ -65,9 +82,9 @@ const ProfileEdit = () => {
 			setAvatarFile(file);
 			setAvatarPreview(url);
 		}
-	};
+	}, []);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     setSaving(true);
     try {
       const formData = new FormData();
@@ -86,7 +103,7 @@ const ProfileEdit = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [firstName, lastName, username, bio, location, avatarFile, avatarPreview, navigate, showError]);
 
   if (loading) {
     return (
@@ -99,7 +116,6 @@ const ProfileEdit = () => {
   return (
     <div className="edit-profile-root">
       <div className="edit-profile-card">
-        {/* Header */}
         <div className="edit-profile-header">
           <button className="edit-profile-back" onClick={() => navigate("/chats")}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -110,11 +126,10 @@ const ProfileEdit = () => {
           <h1 className="edit-profile-title">Edit profile</h1>
         </div>
 
-        {/* Avatar */}
         <div className="edit-avatar-section">
           <div className="edit-avatar-preview" onClick={() => fileRef.current?.click()} title="Change photo">
             {avatarPreview ? (
-              <img src={avatarPreview} alt="avatar" />
+              <img src={avatarPreview} alt="avatar" width={80} height={80} loading="lazy" />
             ) : (
               <svg viewBox="0 0 40 40" fill="none">
                 <circle cx="20" cy="16" r="7" stroke="#191970" strokeWidth="1.8" />
@@ -139,6 +154,9 @@ const ProfileEdit = () => {
                   key={url}
                   src={url}
                   alt="default avatar"
+                  width={40}
+                  height={40}
+                  loading="lazy"
                   className={`edit-avatar-opt ${avatarPreview === url && !avatarFile ? "selected" : ""}`}
                   onClick={() => {
                     setAvatarFile(null);
@@ -152,7 +170,6 @@ const ProfileEdit = () => {
           <input ref={fileRef} type="file" accept="image/*" className="d-none" onChange={handleFileInput} />
         </div>
 
-        {/* Form fields */}
         <div className="edit-profile-fields">
           <div className="edit-field-row">
             <div className="form-floating">
@@ -218,7 +235,6 @@ const ProfileEdit = () => {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="edit-profile-actions">
           <button className="edit-profile-cancel" onClick={() => navigate("/chats")}>
             Cancel

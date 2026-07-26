@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { socket } from "../../backend";
 import type { Participant } from "../constants";
@@ -8,6 +8,14 @@ interface AddMemberModalProps {
 	onClose: () => void;
 }
 
+function useDebounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
+	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	return useCallback((...args: any[]) => {
+		if (timer.current) clearTimeout(timer.current);
+		timer.current = setTimeout(() => fn(...args), delay);
+	}, [fn, delay]) as unknown as T;
+}
+
 export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 	const [query, setQuery] = useState("");
 	const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
@@ -15,7 +23,6 @@ export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 	const [selected, setSelected] = useState<Participant[]>([]);
 	const listenerRef = useRef<((data: any) => void) | null>(null);
 
-	// Cleanup socket listener on unmount
 	useEffect(() => {
 		return () => {
 			if (listenerRef.current) {
@@ -25,11 +32,9 @@ export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 		};
 	}, []);
 
-	const handleSearch = (value: string) => {
-		setQuery(value);
+	const doSearch = useCallback((value: string) => {
 		if (!value.trim()) return;
 
-		// Remove previous listener before adding a new one
 		if (listenerRef.current) {
 			socket.off("userSearch", listenerRef.current);
 		}
@@ -55,6 +60,13 @@ export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 		listenerRef.current = handler;
 		socket.on("userSearch", handler);
 		socket.emit("getUser", { username: value.trim() });
+	}, []);
+
+	const debouncedSearch = useDebounce(doSearch, 300);
+
+	const handleSearch = (value: string) => {
+		setQuery(value);
+		debouncedSearch(value);
 	};
 
 	const addParticipant = (p: Participant) => {
@@ -100,13 +112,13 @@ export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 					<p className="ncm-status not-found">No user found with that username.</p>
 				)}
 
-				{searchStatus === "found" && foundUser && !selected.find((s) => s.uid === foundUser.uid) && (
+					{searchStatus === "found" && foundUser && !selected.find((s) => s.uid === foundUser.uid) && (
 					<div
 						className="ncm-user-preview ncm-user-preview--addable"
 						onClick={() => addParticipant(foundUser)}
 					>
 						{foundUser.avatarUrl ? (
-							<img src={foundUser.avatarUrl} alt="" className="ncm-avatar" />
+							<img src={foundUser.avatarUrl} alt="" width={36} height={36} loading="lazy" className="ncm-avatar" />
 						) : (
 							<div className="ncm-avatar-placeholder">
 								{foundUser.firstName[0]}{foundUser.lastName[0]}

@@ -1,7 +1,15 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import type { NewChatModalProps } from "../constants";
 import { auth } from "../../firebase";
+
+function useDebounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
+	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	return useCallback((...args: any[]) => {
+		if (timer.current) clearTimeout(timer.current);
+		timer.current = setTimeout(() => fn(...args), delay);
+	}, [fn, delay]) as unknown as T;
+}
 
 export const NewChatModal = ({
 	onClose,
@@ -11,10 +19,11 @@ export const NewChatModal = ({
 	foundUser,
 }: NewChatModalProps) => {
 	const [username, setUsername] = useState("");
+	const debouncedSearch = useDebounce(onSearch, 300);
 
 	const handleChange = (value: string) => {
 		setUsername(value);
-		if (value.trim()) onSearch(value.trim());
+		if (value.trim()) debouncedSearch(value.trim());
 	};
 
 	return createPortal(
@@ -49,6 +58,9 @@ export const NewChatModal = ({
 								<img
 									src={foundUser.avatarUrl}
 									alt=""
+									width={40}
+									height={40}
+									loading="lazy"
 									className="modal-user-avatar"
 								/>
 							) : (

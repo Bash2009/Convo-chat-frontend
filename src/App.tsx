@@ -1,27 +1,40 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import "./App.css";
 import "./index.css";
-import "./verification/VerifyEmail.css";
-import "./chatList/ChatList.css";
 
 import { ErrorModalProvider } from "./ErrorModal";
-import Auth from "./auth/auth";
 import RequireAuth from "./auth/RequireAuth";
-import VerifyEmail from "./verification/VerifyEmail";
-import ProfileSetup from "./profileSetup/ProfileSetup";
-import ProfileEdit from "./profileEdit/ProfileEdit";
-import ChatLayout from "./chatList/ChatLayout";
+import ErrorBoundary from "./ErrorBoundary";
+
+const Auth = lazy(() => import("./auth/auth"));
+const VerifyEmail = lazy(() => import("./verification/VerifyEmail"));
+const ProfileSetup = lazy(() => import("./profileSetup/ProfileSetup"));
+const ProfileEdit = lazy(() => import("./profileEdit/ProfileEdit"));
+const ChatLayout = lazy(() => import("./chatList/ChatLayout"));
+
+const PageLoader = () => (
+	<div style={{
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "center",
+		minHeight: "100vh",
+		fontFamily: "'DM Sans', sans-serif",
+		color: "#191970",
+	}}>
+		Loading…
+	</div>
+);
 
 const App = () => {
 	return (
+		<ErrorBoundary>
 		<ErrorModalProvider>
 		<BrowserRouter>
+			<Suspense fallback={<PageLoader />}>
 			<Routes>
-				{/* Public */}
 				<Route path="/" element={<Auth />} />
 				<Route path="/verify-email" element={<VerifyEmail />} />
-
-				{/* Protected — require Firebase session + access token */}
 				<Route
 					path="/profile-setup"
 					element={
@@ -46,9 +59,25 @@ const App = () => {
 						</RequireAuth>
 					}
 				/>
+				<Route path="*" element={
+					<div style={{
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						minHeight: "100vh",
+						fontFamily: "'DM Sans', sans-serif",
+						flexDirection: "column",
+						gap: "0.5rem",
+					}}>
+						<h2 style={{ color: "#191970" }}>404 — Page not found</h2>
+						<a href="/" style={{ color: "#191970" }}>Go home</a>
+					</div>
+				} />
 			</Routes>
+			</Suspense>
 		</BrowserRouter>
 		</ErrorModalProvider>
+		</ErrorBoundary>
 	);
 };
 

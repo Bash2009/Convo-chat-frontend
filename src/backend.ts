@@ -1,76 +1,95 @@
-import axios from "axios";
-import { io } from "socket.io-client";
-import { auth } from "./firebase";
-import { signOut } from "firebase/auth";
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
-// ── Axios instance ────────────────────────────────────────────────────────────
+// ── Fetch wrapper (replaces axios) ────────────────────────────────────────────
 
-const api = axios.create({
-	baseURL: import.meta.env.VITE_BACKEND_URL,
-	withCredentials: true,
-});
-
-// Attach the access token to every outgoing request
-api.interceptors.request.use((config) => {
+async function request(method: string, path: string, body?: unknown, opts?: { headers?: Record<string, string> }): Promise<Response> {
 	const token = localStorage.getItem("access_token");
-	if (token) config.headers.Authorization = `Bearer ${token}`;
-	return config;
-});
+	const headers: Record<string, string> = {
+		...(opts?.headers ?? {}),
+	};
+	if (token) headers["Authorization"] = `Bearer ${token}`;
+	if (body && !(body instanceof FormData)) {
+		headers["Content-Type"] = "application/json";
+	}
 
-// On 401, attempt a silent token refresh; if that fails too, sign out fully
-api.interceptors.response.use(
-	(res) => res,
-	async (error) => {
-		const original = error.config;
-		if (error.response?.status === 401 && !original._retry) {
-			original._retry = true;
-			const refreshToken = localStorage.getItem("refresh_token");
-			if (refreshToken) {
-				try {
-					const { data } = await axios.post(
-						`${import.meta.env.VITE_BACKEND_URL}/auth/refresh`,
-						{ uid: auth.currentUser?.uid },
-						{ headers: { Authorization: `Bearer ${refreshToken}` } },
-					);
-					localStorage.setItem("access_token", data.access_token);
-					localStorage.setItem("refresh_token", data.refresh_token);
-					original.headers.Authorization = `Bearer ${data.access_token}`;
-					return api(original);
-				} catch {
-					await logout();
-				}
+	const res = await fetch(`${BASE_URL}${path}`, {
+		method,
+		headers,
+		body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
+	});
+
+	if (res.status === 401) {
+		const refreshToken = localStorage.getItem("refresh_token");
+		if (refreshToken) {
+			const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
+				method: "POST",
+				headers: { Authorization: `Bearer ${refreshToken}` },
+			});
+			if (refreshRes.ok) {
+				const data = await refreshRes.json();
+				localStorage.setItem("access_token", data.access_token);
+				localStorage.setItem("refresh_token", data.refresh_token);
+				updateSocketAuth();
+				headers["Authorization"] = `Bearer ${data.access_token}`;
+				const retryRes = await fetch(`${BASE_URL}${path}`, { method, headers, body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined });
+				return retryRes;
 			} else {
 				await logout();
 			}
+		} else {
+			await logout();
 		}
-		return Promise.reject(error);
-	},
-);
+	}
+
+	return res;
+}
+
+const api = {
+	get: (path: string) => request("GET", path).then(r => r.json()),
+	post: (path: string, body?: unknown, opts?: { headers?: Record<string, string> }) =>
+		request("POST", path, body, opts).then(r => r.json()),
+	patch: (path: string, body?: unknown) =>
+		request("PATCH", path, body).then(r => r.json()),
+};
 
 export default api;
 
 // ── Socket singleton ──────────────────────────────────────────────────────────
-// Token is read lazily at connect-time so it's always fresh after a login/refresh.
 
-export const socket = io(import.meta.env.VITE_BACKEND_URL, {
+function getSocketAuth() {
+	return { token: localStorage.getItem("access_token") };
+}
+
+function updateSocketAuth() {
+	if (socket.connected) {
+		socket.auth = getSocketAuth;
+		socket.disconnect().connect();
+	}
+}
+
+export const socket = io(BASE_URL, {
 	withCredentials: true,
 	autoConnect: false,
-	auth: (cb) => cb({ token: localStorage.getItem("access_token") }),
+	auth: getSocketAuth,
+	reconnection: true,
+	reconnectionAttempts: 10,
+	reconnectionDelay: 1000,
+	reconnectionDelayMax: 5000,
 });
 
 // ── Shared logout ─────────────────────────────────────────────────────────────
-// Invalidates tokens on the backend, clears localStorage, disconnects the socket,
-// and signs out of Firebase. Call this from any "Sign out" button.
+
+import { signOut } from "firebase/auth";
+import { auth } from "./firebase";
 
 export const logout = async () => {
 	const refreshToken = localStorage.getItem("refresh_token");
 	try {
 		if (refreshToken) {
-			await axios.post(
-				`${import.meta.env.VITE_BACKEND_URL}/auth/logout`,
-				{ uid: auth.currentUser?.uid },
-				{ headers: { Authorization: `Bearer ${refreshToken}` } },
-			);
+			await fetch(`${BASE_URL}/auth/logout`, {
+				method: "POST",
+				headers: { Authorization: `Bearer ${refreshToken}` },
+			});
 		}
 	} catch {
 		// Best-effort — clear locally regardless of server response
