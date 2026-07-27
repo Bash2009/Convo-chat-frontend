@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import ChatList from "./ChatList";
 import type { ChatListHandle } from "./ChatList";
 import ChatRoom from "./ChatRoom";
