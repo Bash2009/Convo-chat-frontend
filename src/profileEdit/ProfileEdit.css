@@ -1,4 +1,4 @@
-/* ── ProfileEdit page ──────────────────────────────────────────────────────────── */
+/* ── ProfileEdit page ────────────────────────────────────────────────────── */
 
 .edit-profile-root {
   display: flex;
@@ -7,25 +7,32 @@
   width: 100%;
   height: 100vh;
   height: 100dvh;
-  background: #f8f9fa;
-  font-family: "DM Sans", sans-serif;
+  background: var(--color-bg, #f0f2f5);
+  font-family: var(--font-sans, "DM Sans", sans-serif);
 }
 
 .edit-profile-loading {
-  color: #9ca3af;
+  color: var(--color-text-muted, #9ca3af);
   font-size: 0.9rem;
+  animation: editProfilePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes editProfilePulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
 }
 
 .edit-profile-card {
   width: 100%;
   max-width: 520px;
-  background: #fff;
-  border-radius: 16px;
+  background: var(--color-surface, #fff);
+  border-radius: var(--radius-lg, 16px);
   padding: 1.75rem 2rem 2rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+  box-shadow: var(--shadow-card, 0 4px 32px rgba(25, 25, 112, 0.08));
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  animation: cardEntrance 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .edit-profile-header {
@@ -40,28 +47,29 @@
   gap: 4px;
   background: none;
   border: none;
-  color: var(--navy, #191970);
-  font-family: "DM Sans", sans-serif;
+  color: var(--color-navy, var(--navy, #191970));
+  font-family: var(--font-sans, "DM Sans", sans-serif);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   padding: 4px 6px;
-  border-radius: 8px;
-  transition: background 0.12s;
+  border-radius: var(--radius-sm, 8px);
+  transition: background var(--transition-fast, 0.12s);
 }
 .edit-profile-back:hover {
-  background: #f0f2ff;
+  background: var(--color-navy-bg, #f0f2ff);
 }
 
 .edit-profile-title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--navy, #191970);
+  color: var(--color-navy, var(--navy, #191970));
   margin: 0;
   flex: 1;
 }
 
-/* Avatar */
+/* ── Avatar ─────────────────────────────────────────────────────────────── */
+
 .edit-avatar-section {
   display: flex;
   gap: 14px;
@@ -76,14 +84,17 @@
   flex-shrink: 0;
   position: relative;
   cursor: pointer;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--color-border-strong, #dde1e7);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.18s;
+  transition: border-color var(--transition-normal, 0.18s),
+              box-shadow var(--transition-normal, 0.18s);
 }
 .edit-avatar-preview:hover {
-  border-color: var(--navy, #191970);
+  border-color: var(--color-navy, var(--navy, #191970));
+  border-style: solid;
+  box-shadow: 0 0 0 3px rgba(25, 25, 112, 0.1);
 }
 .edit-avatar-preview img {
   width: 100%;
@@ -98,12 +109,12 @@
 .edit-avatar-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(25, 25, 112, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.18s;
+  transition: opacity var(--transition-fast, 0.12s);
   border-radius: 50%;
 }
 .edit-avatar-preview:hover .edit-avatar-overlay {
@@ -113,13 +124,13 @@
 .edit-avatar-label {
   font-weight: 600;
   font-size: 0.85rem;
-  color: #111827;
+  color: var(--color-text-primary, #111827);
   margin: 0 0 2px;
 }
 
 .edit-avatar-hint {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-text-muted, #9ca3af);
   margin: 0 0 6px;
 }
 
@@ -136,16 +147,19 @@
   cursor: pointer;
   object-fit: cover;
   border: 2px solid transparent;
-  transition: border-color 0.15s, transform 0.12s;
+  transition: border-color var(--transition-fast, 0.12s),
+              transform var(--transition-fast, 0.12s);
 }
 .edit-avatar-opt:hover {
-  transform: scale(1.12);
+  transform: scale(1.15);
 }
 .edit-avatar-opt.selected {
-  border-color: var(--navy, #191970);
+  border-color: var(--color-navy, var(--navy, #191970));
+  box-shadow: 0 0 0 2px rgba(25, 25, 112, 0.15);
 }
 
-/* Fields */
+/* ── Fields ─────────────────────────────────────────────────────────────── */
+
 .edit-profile-fields {
   display: flex;
   flex-direction: column;
@@ -160,7 +174,8 @@
   flex: 1;
 }
 
-/* Actions */
+/* ── Actions ────────────────────────────────────────────────────────────── */
+
 .edit-profile-actions {
   display: flex;
   gap: 10px;
@@ -169,37 +184,51 @@
 
 .edit-profile-cancel {
   padding: 9px 22px;
-  border-radius: 10px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
-  color: #374151;
-  font-family: "DM Sans", sans-serif;
+  border-radius: var(--radius-sm, 8px);
+  border: 1.5px solid var(--color-border-strong, #e5e7eb);
+  background: var(--color-surface, #fff);
+  color: var(--color-text-secondary, #374151);
+  font-family: var(--font-sans, "DM Sans", sans-serif);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background var(--transition-fast, 0.12s),
+              border-color var(--transition-fast, 0.12s),
+              transform var(--transition-fast, 0.12s);
 }
 .edit-profile-cancel:hover {
   background: #f3f4f6;
   border-color: #d1d5db;
 }
+.edit-profile-cancel:active {
+  transform: scale(0.97);
+}
 
 .edit-profile-save {
   padding: 9px 22px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm, 8px);
   border: none;
-  background: var(--navy, #191970);
+  background: var(--color-navy, var(--navy, #191970));
   color: #fff;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-sans, "DM Sans", sans-serif);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.12s, opacity 0.12s;
+  transition: background var(--transition-fast, 0.12s),
+              opacity var(--transition-fast, 0.12s),
+              transform var(--transition-fast, 0.12s),
+              box-shadow var(--transition-fast, 0.12s);
 }
 .edit-profile-save:hover {
-  background: #0f1b6b;
+  background: var(--color-navy-hover, #0f1b6b);
+  box-shadow: 0 4px 12px rgba(25, 25, 112, 0.25);
+}
+.edit-profile-save:active {
+  transform: scale(0.97);
 }
 .edit-profile-save:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }

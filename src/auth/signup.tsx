@@ -73,7 +73,6 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 			try {
 				const data = await api.post("/auth/register", {
 					email,
-					uid: user.uid,
 				});
 				setTokens(data.access_token);
 				navigate("/verify-email");

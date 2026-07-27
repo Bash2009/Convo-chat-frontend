@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { auth } from "../firebase";
 
 import { type ProfileData, type ProfileErrors } from "./types";
 import StepWelcome from "./StepWelcome";
@@ -116,6 +115,8 @@ const ProfileSetup = () => {
 					showError("A user with this username already exists.");
 					return;
 				}
+			} catch {
+				// 404 or other error means username is available — proceed
 			} finally {
 				checkingRef.current = false;
 			}
@@ -132,7 +133,6 @@ const ProfileSetup = () => {
 		setSubmit(true);
 		try {
 			const formData = new FormData();
-			formData.append("uid", auth.currentUser?.uid ?? "");
 			formData.append("firstName", data.firstName.trim());
 			formData.append("lastName", data.lastName.trim());
 			formData.append("userName", data.username);

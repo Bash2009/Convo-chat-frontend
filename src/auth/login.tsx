@@ -63,7 +63,6 @@ const Login = ({ handleChange }: LoginProps) => {
 			}
 			try {
 				const data = await api.post("/auth/login", {
-					uid: user.uid,
 					firebaseToken: await user.getIdToken(),
 				});
 				setTokens(data.access_token);

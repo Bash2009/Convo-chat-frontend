@@ -62,6 +62,7 @@ async function request(method: string, path: string, body?: unknown, opts?: { he
 		body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
 	});
 
+	// Token expired — try to refresh once
 	if (res.status === 401) {
 		const refreshed = await refreshWithMutex();
 		if (refreshed) {
@@ -70,9 +71,27 @@ async function request(method: string, path: string, body?: unknown, opts?: { he
 				method, headers, credentials: "include",
 				body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
 			});
+			// If the retry also failed with a non-2xx, throw
+			if (!retryRes.ok) {
+				const errBody = await retryRes.json().catch(() => ({}));
+				const err = new Error(errBody.message || `Request failed: ${retryRes.status}`);
+				(err as any).status = retryRes.status;
+				(err as any).body = errBody;
+				throw err;
+			}
 			return retryRes;
 		}
 		await logout();
+		throw new Error("Session expired. Please log in again.");
+	}
+
+	// Non-2xx (and not 401) — reject so calling code can catch
+	if (!res.ok) {
+		const errBody = await res.json().catch(() => ({}));
+		const err = new Error(errBody.message || `Request failed: ${res.status}`);
+		(err as any).status = res.status;
+		(err as any).body = errBody;
+		throw err;
 	}
 
 	return res;
