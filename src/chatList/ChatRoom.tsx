@@ -158,6 +158,13 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, on
 		};
 		socket.on("chatDeleted", onChatDeletedHandler);
 
+		const onMemberRemovedHandler = (updatedChat: { id: string; participants: { user: { uid: string } }[] }) => {
+			if (updatedChat.id === chat.id && !updatedChat.participants.some((p) => p.user.uid === currentUid)) {
+				onChatDeleted?.(chat.id);
+			}
+		};
+		socket.on("memberRemoved", onMemberRemovedHandler);
+
 		// Mark existing messages as read when the room opens.
 		// The ack callback tells the server to persist the updated unread count.
 		// If the server doesn't support acks, the frontend already reset unread
@@ -173,6 +180,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, on
 			socket.off("newMessage");
 			socket.off("messageStatus");
 			socket.off("chatDeleted", onChatDeletedHandler);
+			socket.off("memberRemoved", onMemberRemovedHandler);
 		};
 	// eslint-disable-next-line react-hooks/exhaustive-deps -- callbacks are stable or handled via chat.id changes
 	}, [chat.id, currentUid]);

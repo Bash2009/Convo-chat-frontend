@@ -62,3 +62,16 @@ The bug was purely frontend: `AddMemberModal` read profile fields from the wrong
 #### 4. `deleteChat` for groups (admin only)
 - When the admin deletes a group, `deleteChat` is emitted (same as private chat delete).
 - The server should delete the entire group document and emit `chatDeleted` to **all** participants so all members remove it from their lists.
+
+#### 5. `removeMember` socket event (admin removes a member)
+- **Client emits:** `removeMember { chatId, memberUid }`
+- **Server must:**
+  - Verify the requesting user is the group admin (reject if not).
+  - Remove `memberUid` from the group's participant list.
+  - Emit **`memberRemoved`** to all participants with the full updated `ChatStructure` (same structure as the existing `memberAdded` event).
+
+#### 6. `memberRemoved` socket event (server response)
+- **Server emits:** `memberRemoved (updatedChat: ChatStructure)`
+- **Client handler:** Updates the chat in the sidebar list by replacing the old chat entry with `updatedChat` (same pattern as the existing `memberAdded` handler).
+- If the removed member is the currently-viewed chat, the frontend should close the room for that user.
+- **Known limitation:** The `activeChat` state in `ChatLayout` is set once when the user clicks a chat and won't reflect participant changes until the chat is re-selected or the page reloads. For a production fix, `ChatLayout` should listen for `memberRemoved` and update `activeChat` directly.

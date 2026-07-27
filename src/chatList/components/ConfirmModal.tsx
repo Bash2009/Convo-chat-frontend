@@ -18,7 +18,7 @@ export const ConfirmModal = ({
 	onCancel,
 }: ConfirmModalProps) =>
 	createPortal(
-		<div className="chatlist-modal-overlay" onClick={onCancel}>
+		<div className="chatlist-modal-overlay" onClick={(e) => { e.stopPropagation(); onCancel(); }}>
 			<div className="chatlist-modal" onClick={(e) => e.stopPropagation()}>
 				<p className="chatlist-modal-title">{title}</p>
 				<p className="chatlist-modal-desc">{description}</p>

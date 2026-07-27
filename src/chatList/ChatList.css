@@ -479,6 +479,25 @@
 	color: var(--text-placeholder);
 }
 
+.group-info-remove-btn {
+	flex-shrink: 0;
+	width: 32px;
+	height: 32px;
+	border: none;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: var(--text-placeholder);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.12s, color 0.12s;
+}
+.group-info-remove-btn:hover {
+	background: var(--danger-bg);
+	color: var(--danger);
+}
+
 .group-info-members::-webkit-scrollbar {
 	width: 0;
 }

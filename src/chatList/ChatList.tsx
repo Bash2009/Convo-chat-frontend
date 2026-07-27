@@ -35,7 +35,7 @@ const ChatList = forwardRef(function ChatList(
 	ref,
 ) {
 	const navigate = useNavigate();
-	const { showError } = useErrorModal();
+	const { showError, showToast } = useErrorModal();
 	const [chats, setChats]           = useState<ChatStructure[]>([]);
 	const [search, setSearch]         = useState("");
 	const [loading, setLoading]       = useState(true);
@@ -200,6 +200,23 @@ const ChatList = forwardRef(function ChatList(
 			);
 		});
 
+		socket.on("memberRemoved", (updatedChat: ChatStructure) => {
+			const currentUid = auth.currentUser?.uid;
+			const isRemoved = currentUid && !updatedChat.participants.some(
+				(p) => p.user.uid === currentUid,
+			);
+			if (isRemoved) {
+				setChats((prev) => prev.filter((c) => c.id !== updatedChat.id));
+				showToast("You were removed from the group by the admin.");
+			} else {
+				setChats((prev) =>
+					sortChatsByRecent(
+						prev.map((c) => (c.id === updatedChat.id ? updatedChat : c)),
+					),
+				);
+			}
+		});
+
 		socket.on("userSearch", (data) => {
 			if (data.userExists) {
 				setFoundUser({ ...data.profile, uid: data.profile.user.uid });
@@ -311,6 +328,7 @@ const ChatList = forwardRef(function ChatList(
 			socket.off("chatCreated");
 			socket.off("chatDeleted");
 			socket.off("memberAdded");
+			socket.off("memberRemoved");
 			socket.off("userSearch");
 			socket.off("newMessage");
 			socket.off("error");
@@ -347,6 +365,14 @@ const ChatList = forwardRef(function ChatList(
 	};
 
 	const handlePrivateChat = (uid: string) => {
+		const existing = chats.find(
+			(c) => !c.isGroup && c.participants.some((p) => p.user.uid === uid),
+		);
+		if (existing) {
+			handleSelectChat(existing.id);
+			setModal(null);
+			return;
+		}
 		socket.emit("createChat", { members: [auth.currentUser?.uid, uid] });
 		setModal(null);
 	};
