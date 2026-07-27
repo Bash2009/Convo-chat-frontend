@@ -1,91 +1,108 @@
-/* ── Theme: Light (default) ──────────────────────────────────────────────── */
 :root {
-	/* Page & cards */
-	--page-bg: #f8f9fa;
-	--card-bg: #fff;
-	--hover-bg: #f3f4f6;
-	--active-bg: #f0f2ff;
-	--input-bg: #f8f9fa;
+	/* Fonts */
+	--font-display: 'Fraunces', serif;
+	--font-body: 'DM Sans', sans-serif;
+	--font-mono: 'JetBrains Mono', monospace;
+
+	/* Page & cards — cool stone wall + warm studio paper */
+	--page-bg: #F2EFE8;
+	--card-bg: #FCFAF5;
+	--surface-raised: #FFFFFF;
+	--hover-bg: #F0ECE4;
+	--active-bg: #E8E3D9;
+	--input-bg: #F0ECE4;
 
 	/* Borders */
-	--border: #eceff1;
-	--border-strong: #e5e7eb;
-	--border-input: #dde1e7;
+	--border: #E3DED4;
+	--border-strong: #D4CEC2;
+	--border-input: #D4CEC2;
 
-	/* Text */
-	--text-primary: #111827;
-	--text-secondary: #374151;
-	--text-muted: #6b7280;
-	--text-placeholder: #9ca3af;
-	--text-inverse: #fff;
+	/* Text — warm near-black */
+	--text-primary: #1C1A18;
+	--text-secondary: #5C5955;
+	--text-muted: #8A8680;
+	--text-placeholder: #ADA9A2;
+	--text-inverse: #FFFFFF;
 
-	/* Accent (navy) */
-	--accent: #191970;
-	--accent-hover: #0f1b6b;
-	--accent-light: #e0e4ff;
-	--accent-active: #f0f2ff;
+	/* Vermilion coral — signature accent */
+	--accent: #C9504F;
+	--accent-hover: #B84342;
+	--accent-light: #F5E8E8;
+	--accent-active: #FAEFEF;
+
+	/* Deep teal — cool counterbalance for status / feedback */
+	--accent-secondary: #3D7A6E;
+	--accent-secondary-light: #E4EFEC;
+	--accent-secondary-hover: #356B61;
+
+	/* Amber gold — sparing warmth */
+	--gold: #C8913E;
+	--gold-light: #F5EDD6;
 
 	/* Semantic */
-	--danger: #ef4444;
-	--danger-bg: #fef2f2;
-	--online: #22c55e;
+	--danger: #C53B3B;
+	--danger-bg: #F9EBEB;
+	--online: #3A8F5E;
 
 	/* Shadows & overlays */
-	--shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
-	--shadow-md: 0 4px 24px rgba(0, 0, 0, 0.08);
-	--shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-	--shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.18);
-	--overlay: rgba(0, 0, 0, 0.45);
+	--shadow-sm: 0 1px 3px rgba(28, 26, 24, 0.05);
+	--shadow-md: 0 4px 16px rgba(28, 26, 24, 0.07);
+	--shadow-lg: 0 8px 24px rgba(28, 26, 24, 0.10);
+	--shadow-xl: 0 20px 48px rgba(28, 26, 24, 0.14);
+	--overlay: rgba(28, 26, 24, 0.45);
 
 	/* Chat bubbles */
-	--bubble-own: #191970;
-	--bubble-other: #fff;
+	--bubble-own: #C9504F;
+	--bubble-other: #E5E0D6;
 
-	/* Legacy aliases (for backward compat with existing CSS) */
-	--navy: var(--accent);
-	--navy-hover: var(--accent-hover);
-	--bg: #eceff1;
+	/* Radius */
+	--radius-sm: 8px;
+	--radius-md: 12px;
+	--radius-lg: 16px;
 }
 
-/* ── Theme: Dark ─────────────────────────────────────────────────────────── */
 [data-theme="dark"] {
-	--page-bg: #0f1117;
-	--card-bg: #1a1d2e;
-	--hover-bg: #25283d;
-	--active-bg: #1e2240;
-	--input-bg: #1a1d2e;
+	--page-bg: #141311;
+	--card-bg: #1C1A18;
+	--surface-raised: #242220;
+	--hover-bg: #272422;
+	--active-bg: #2B2825;
+	--input-bg: #272422;
 
-	--border: #2d3154;
-	--border-strong: #3d4270;
-	--border-input: #3d4270;
+	--border: #2D2A27;
+	--border-strong: #3A3733;
+	--border-input: #3A3733;
 
-	--text-primary: #e4e6eb;
-	--text-secondary: #b0b3b8;
-	--text-muted: #8a8d91;
-	--text-placeholder: #6b7280;
-	--text-inverse: #fff;
+	--text-primary: #EDEBE6;
+	--text-secondary: #A09B95;
+	--text-muted: #78736D;
+	--text-placeholder: #5C5852;
+	--text-inverse: #FFFFFF;
 
-	--accent: #5b5fff;
-	--accent-hover: #7b7fff;
-	--accent-light: #25284a;
-	--accent-active: #1e2240;
+	--accent: #E86565;
+	--accent-hover: #D95A5A;
+	--accent-light: #2D1E1E;
+	--accent-active: #261A1A;
 
-	--danger: #f87171;
-	--danger-bg: #2d1b1b;
-	--online: #4ade80;
+	--accent-secondary: #4A9C8E;
+	--accent-secondary-light: #1A2D29;
+	--accent-secondary-hover: #5AADA0;
 
-	--shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.25);
-	--shadow-md: 0 4px 24px rgba(0, 0, 0, 0.35);
-	--shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
-	--shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.5);
+	--gold: #C99B3E;
+	--gold-light: #2D2818;
+
+	--danger: #D95E5E;
+	--danger-bg: #2D1B1B;
+	--online: #4CAF78;
+
+	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.30);
+	--shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+	--shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.40);
+	--shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.45);
 	--overlay: rgba(0, 0, 0, 0.65);
 
-	--bubble-own: #5b5fff;
-	--bubble-other: #25283d;
-
-	--navy: var(--accent);
-	--navy-hover: var(--accent-hover);
-	--bg: #0f1117;
+	--bubble-own: #E86565;
+	--bubble-other: #252220;
 }
 
 body {
@@ -96,10 +113,6 @@ body {
 	min-height: 100vh;
 }
 
-/* Smooth transition when switching themes.
-   Only target theme-affecting properties to avoid animating layout/style on
-   initial paint. The .no-transitions class on <html> during boot prevents
-   flash transitions; it's removed by JavaScript after mount. */
 html.no-transitions *,
 html.no-transitions *::before,
 html.no-transitions *::after {
@@ -112,6 +125,3 @@ html.no-transitions *::after {
 	transition: background-color 0.2s ease, border-color 0.2s ease,
 		color 0.2s ease;
 }
-
-/* On initial load, remove the .no-transitions class so future theme switches
-   animate smoothly. Applied by the IIFE in main.tsx. */

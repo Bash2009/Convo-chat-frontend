@@ -7,7 +7,7 @@ export const StatusTick = ({
 	status: MessageStatus;
 	size?: "small" | "default";
 }) => {
-	const color   = status === "read" ? "#191970" : "currentColor";
+	const color   = status === "read" ? "var(--accent-secondary, #3D7A6E)" : "currentColor";
 	const opacity = status === "sent" ? 0.5 : 1;
 	const w = size === "small" ? 10 : 12;
 	const h = size === "small" ? 10 : 12;

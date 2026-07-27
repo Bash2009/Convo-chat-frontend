@@ -424,7 +424,10 @@ const ChatList = forwardRef(function ChatList(
 
 			<div className="chatlist-root">
 				<div className="chatlist-header">
-					<h1 className="chatlist-title">Messages</h1>
+					<div className="chatlist-brand">
+						<h1 className="chatlist-title">Convo</h1>
+						<p className="chatlist-subtitle">Messages</p>
+					</div>
 					<div className="chatlist-header-actions">
 						<div className="chatlist-dropdown-wrap" ref={dropdownRef}>
 							<button
@@ -472,7 +475,7 @@ const ChatList = forwardRef(function ChatList(
 							<button
 								className="chatlist-icon-btn"
 								title="Notifications enabled"
-								style={{ color: "var(--accent, #191970)" }}
+								style={{ color: "var(--accent)" }}
 							>
 								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 									<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />

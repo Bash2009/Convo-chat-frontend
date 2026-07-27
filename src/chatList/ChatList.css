@@ -1,11 +1,11 @@
-/* ── ChatList ─────────────────────────────────────────────────────────────── */
+/* ── ChatList ──────────────────────────── */
 
 .chatlist-root {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 	background: var(--card-bg);
-	font-family: "DM Sans", sans-serif;
+	font-family: var(--font-body);
 }
 
 /* Header */
@@ -13,22 +13,40 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 1.1rem 1.25rem 0.75rem;
+	padding: 1rem 1.25rem 0.6rem;
 	flex-shrink: 0;
 }
 
+.chatlist-brand {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
 .chatlist-title {
-	font-size: 1.3rem;
+	font-family: var(--font-display);
+	font-size: 1.45rem;
 	font-weight: 700;
 	color: var(--accent);
 	margin: 0;
+	letter-spacing: -0.03em;
+	font-variation-settings: 'opsz' 144;
+	line-height: 1.1;
 }
 
-/* Groups the + button and the sign-out button side by side */
+.chatlist-subtitle {
+	font-size: 0.7rem;
+	font-weight: 500;
+	color: var(--text-muted);
+	margin: 0;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
 .chatlist-header-actions {
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	gap: 3px;
 }
 
 .chatlist-dropdown-wrap {
@@ -38,17 +56,17 @@
 .chatlist-icon-btn {
 	width: 32px;
 	height: 32px;
-	border-radius: 8px;
+	border-radius: var(--radius-sm);
 	border: none;
-	background: var(--hover-bg);
-	color: var(--accent);
+	background: transparent;
+	color: var(--text-muted);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
-	transition: background 0.15s;
+	transition: background 0.15s, color 0.15s;
 }
-.chatlist-icon-btn:hover { background: var(--border-strong); }
+.chatlist-icon-btn:hover { background: var(--hover-bg); color: var(--text-secondary); }
 
 /* Search */
 .chatlist-search-wrap {
@@ -70,8 +88,8 @@
 	width: 100%;
 	padding: 8px 12px 8px 34px;
 	border: 1.5px solid var(--border);
-	border-radius: 10px;
-	font-family: "DM Sans", sans-serif;
+	border-radius: var(--radius-sm);
+	font-family: var(--font-body);
 	font-size: 0.875rem;
 	color: var(--text-secondary);
 	background: var(--input-bg);
@@ -97,7 +115,7 @@
 }
 .chatlist-status.error { color: var(--danger); }
 
-/* Individual chat row */
+/* Chat row animation */
 @keyframes chatListFadeIn {
 	from { opacity: 0; transform: translateY(6px); }
 	to   { opacity: 1; transform: translateY(0); }
@@ -108,7 +126,6 @@
 	to   { transform: scaleX(1); }
 }
 
-/* Wrapper for swipe-to-delete */
 .chatlist-item-wrap {
 	position: relative;
 	overflow: hidden;
@@ -117,7 +134,7 @@
 .chatlist-swipe-delete {
 	position: absolute;
 	inset: 0;
-	background: var(--danger, #e53e3e);
+	background: var(--danger);
 	display: flex;
 	align-items: center;
 	justify-content: flex-end;
@@ -130,6 +147,8 @@
 .chatlist-swipe-delete svg {
 	opacity: 0.8;
 }
+
+/* ── Chat list item: gold active indicator ── */
 
 .chatlist-item {
 	display: flex;
@@ -148,7 +167,12 @@
 	touch-action: pan-y;
 }
 .chatlist-item:hover  { background: var(--hover-bg); }
-.chatlist-item.active { background: var(--accent-active); }
+
+/* Active item: vermilion left border indicator */
+.chatlist-item.active {
+	background: var(--accent-active);
+	box-shadow: inset 3px 0 0 0 var(--accent);
+}
 
 .chatlist-item-body {
 	flex: 1;
@@ -169,12 +193,16 @@
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	font-family: var(--font-body);
+	letter-spacing: -0.01em;
 }
 
 .chatlist-item-time {
-	font-size: 0.72rem;
+	font-size: 0.65rem;
+	font-family: var(--font-mono);
 	color: var(--text-placeholder);
 	flex-shrink: 0;
+	font-weight: 500;
 }
 
 .chatlist-item-msg {
@@ -202,20 +230,22 @@
 	display: block;
 }
 
+/* Unread badge — accent */
 .chatlist-badge {
 	flex-shrink: 0;
 	background: var(--accent);
 	color: var(--text-inverse);
-	font-size: 0.68rem;
+	font-size: 0.64rem;
 	font-weight: 600;
+	font-family: var(--font-mono);
 	border-radius: 999px;
-	padding: 1px 7px;
+	padding: 2px 7px;
 	min-width: 20px;
 	text-align: center;
+	box-shadow: 0 2px 6px rgba(201, 80, 79, 0.25);
 }
 
-/* ── Modal overlay & card ─────────────────────────────────────────────────── */
-
+/* Modal overlay & card */
 .chatlist-modal-overlay {
 	position: fixed;
 	inset: 0;
@@ -235,7 +265,7 @@
 
 .chatlist-modal {
 	background: var(--card-bg);
-	border-radius: 16px;
+	border-radius: var(--radius-lg);
 	padding: 1.5rem;
 	width: 100%;
 	max-width: 400px;
@@ -252,18 +282,20 @@
 }
 
 .chatlist-modal-title {
+	font-family: var(--font-display);
 	font-weight: 700;
-	font-size: 1.05rem;
-	color: var(--accent);
+	font-size: 1.1rem;
+	color: var(--text-primary);
 	margin: 0 0 4px;
+	font-variation-settings: 'opsz' 72;
 }
 
 .chatlist-modal-input {
 	width: 100%;
 	padding: 9px 13px;
 	border: 1.5px solid var(--border-strong);
-	border-radius: 10px;
-	font-family: "DM Sans", sans-serif;
+	border-radius: var(--radius-sm);
+	font-family: var(--font-body);
 	font-size: 0.9rem;
 	color: var(--text-secondary);
 	background: var(--input-bg);
@@ -274,7 +306,6 @@
 .chatlist-modal-input:focus { border-color: var(--accent); }
 .chatlist-modal-input::placeholder { color: var(--text-placeholder); }
 
-/* Actions row */
 .chatlist-modal-actions {
 	display: flex;
 	gap: 8px;
@@ -288,7 +319,7 @@
 	border: 1.5px solid var(--border-strong);
 	background: var(--card-bg);
 	color: var(--text-secondary);
-	font-family: "DM Sans", sans-serif;
+	font-family: var(--font-body);
 	font-size: 0.875rem;
 	font-weight: 500;
 	cursor: pointer;
@@ -302,7 +333,7 @@
 	border: none;
 	background: var(--accent);
 	color: var(--text-inverse);
-	font-family: "DM Sans", sans-serif;
+	font-family: var(--font-body);
 	font-size: 0.875rem;
 	font-weight: 600;
 	cursor: pointer;
@@ -311,7 +342,7 @@
 .chatlist-modal-start:hover    { background: var(--accent-hover); }
 .chatlist-modal-start:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* ── GroupInfoPanel ──────────────────────────────────────────────────────── */
+/* ── GroupInfoPanel ────────────────────── */
 
 .group-info-header {
 	display: flex;
@@ -322,6 +353,7 @@
 }
 
 .group-info-name {
+	font-family: var(--font-display);
 	font-size: 1.15rem;
 	font-weight: 700;
 	color: var(--text-primary);
@@ -363,7 +395,7 @@
 	align-items: center;
 	gap: 10px;
 	padding: 8px 10px;
-	border-radius: 10px;
+	border-radius: var(--radius-sm);
 	cursor: pointer;
 	transition: background 0.12s;
 }
@@ -413,8 +445,7 @@
 	width: 0;
 }
 
-/* ── User found card (NewChatModal) ──────────────────────────────────────── */
-
+/* User found card (NewChatModal) */
 .modal-user-status {
 	font-size: 0.82rem;
 	margin: 0;
@@ -429,7 +460,7 @@
 	gap: 10px;
 	padding: 10px 12px;
 	background: var(--input-bg);
-	border-radius: 10px;
+	border-radius: var(--radius-sm);
 	border: 1.5px solid var(--border);
 }
 
@@ -473,8 +504,7 @@
 	flex-shrink: 0;
 }
 
-/* ── NewGroupModal extras ─────────────────────────────────────────────────── */
-
+/* NewGroupModal extras */
 .ncm-status {
 	font-size: 0.82rem;
 	margin: 0;
@@ -488,7 +518,7 @@
 	gap: 10px;
 	padding: 10px 12px;
 	background: var(--input-bg);
-	border-radius: 10px;
+	border-radius: var(--radius-sm);
 	border: 1.5px solid var(--border);
 }
 
@@ -541,8 +571,7 @@
 	flex-shrink: 0;
 }
 
-/* ── Selected participants chips ──────────────────────────────────────────── */
-
+/* Selected participants chips */
 .group-modal-chips {
 	display: flex;
 	flex-wrap: wrap;
@@ -574,8 +603,7 @@
 }
 .group-modal-chip-remove:hover { opacity: 1; }
 
-/* ── New-chat dropdown menu ───────────────────────────────────────────────── */
-
+/* New-chat dropdown menu */
 .chatlist-dropdown {
 	position: absolute;
 	top: calc(100% + 6px);
@@ -583,7 +611,7 @@
 	z-index: 200;
 	background: var(--card-bg);
 	border: 1px solid var(--border-strong);
-	border-radius: 12px;
+	border-radius: var(--radius-md);
 	box-shadow: var(--shadow-lg);
 	overflow: hidden;
 	min-width: 160px;
@@ -603,7 +631,7 @@
 	padding: 10px 14px;
 	background: none;
 	border: none;
-	font-family: "DM Sans", sans-serif;
+	font-family: var(--font-body);
 	font-size: 0.875rem;
 	font-weight: 500;
 	color: var(--text-primary);
@@ -614,8 +642,7 @@
 .chatlist-dropdown-item:hover { background: var(--hover-bg); }
 .chatlist-dropdown-item svg   { flex-shrink: 0; color: var(--accent); }
 
-/* ── Muted indicator ─────────────────────────────────────────────────────── */
-
+/* Muted indicator */
 .chatlist-muted-icon {
 	display: inline-flex;
 	align-items: center;
@@ -628,14 +655,13 @@
 	opacity: 0.7;
 }
 
-/* ── Right-click context menu ────────────────────────────────────────────── */
-
+/* Right-click context menu */
 .chatlist-context-menu {
 	position: fixed;
 	z-index: 5000;
 	background: var(--card-bg);
 	border: 1px solid var(--border-strong);
-	border-radius: 10px;
+	border-radius: var(--radius-sm);
 	box-shadow: var(--shadow-lg);
 	overflow: hidden;
 	min-width: 180px;
@@ -655,7 +681,7 @@
 	padding: 9px 14px;
 	background: none;
 	border: none;
-	font-family: "DM Sans", sans-serif;
+	font-family: var(--font-body);
 	font-size: 0.84rem;
 	font-weight: 500;
 	color: var(--text-primary);
@@ -669,8 +695,7 @@
 	color: var(--text-placeholder);
 }
 
-/* ── Undo delete toast ───────────────────────────────────────────────────── */
-
+/* Undo delete toast */
 @keyframes undoToastSlideUp {
 	from { transform: translateY(100%); opacity: 0; }
 	to   { transform: translateY(0); opacity: 1; }
@@ -689,7 +714,7 @@
 	z-index: 100;
 	background: var(--card-bg);
 	color: var(--text-primary);
-	border-radius: 12px 12px 0 0;
+	border-radius: var(--radius-md) var(--radius-md) 0 0;
 	overflow: hidden;
 	box-shadow: 0 -4px 20px var(--overlay);
 	animation: undoToastSlideUp 0.3s ease;
@@ -721,22 +746,22 @@
 .undo-toast-btn {
 	flex-shrink: 0;
 	padding: 7px 16px;
-	border-radius: 8px;
+	border-radius: var(--radius-sm);
 	border: none;
-	background: var(--accent, #191970);
+	background: var(--accent);
 	color: #fff;
-	font-family: "DM Sans", sans-serif;
+	font-family: var(--font-body);
 	font-size: 0.82rem;
 	font-weight: 600;
 	cursor: pointer;
 	transition: background 0.15s;
 }
 .undo-toast-btn:hover {
-	background: var(--accent-hover, #141560);
+	background: var(--accent-hover);
 }
 
 .undo-toast-progress {
 	height: 3px;
-	background: var(--accent, #191970);
+	background: var(--accent);
 	transition: width 0.1s linear;
 }

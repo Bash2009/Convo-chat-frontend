@@ -39,8 +39,8 @@ const StepAbout = ({ data, onChange, onFileChange }: Props) => {
           {data.avatarPreview
             ? <img src={data.avatarPreview} alt="avatar" />
             : <svg viewBox="0 0 40 40" fill="none">
-                <circle cx="20" cy="16" r="7" stroke="#191970" strokeWidth="1.8" />
-                <path d="M6 36c0-7.73 6.27-14 14-14s14 6.27 14 14" stroke="#191970" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="20" cy="16" r="7" stroke="currentColor" strokeWidth="1.8" />
+                <path d="M6 36c0-7.73 6.27-14 14-14s14 6.27 14 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
               </svg>}
           <div className="avatar-overlay">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2">

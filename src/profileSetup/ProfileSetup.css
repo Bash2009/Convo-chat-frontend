@@ -116,7 +116,7 @@
 
 .avatar-overlay {
   position: absolute; inset: 0;
-  background: rgba(25, 25, 112, 0.45);
+  background: rgba(201, 80, 79, 0.45);
   display: flex; align-items: center; justify-content: center;
   opacity: 0;
   transition: opacity 0.2s;
@@ -170,7 +170,7 @@
   border: 1.5px solid var(--border-input);
   border-radius: 8px;
   color: var(--text-muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   font-size: 0.88rem;
   font-weight: 500;
   padding: 8px 14px;

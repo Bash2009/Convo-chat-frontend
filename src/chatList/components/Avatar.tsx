@@ -55,7 +55,7 @@ export const Avatar = ({
 						justifyContent: "center",
 						fontWeight: 600,
 						fontSize: size * 0.36,
-						fontFamily: "'DM Sans', sans-serif",
+						fontFamily: "'Inter', sans-serif",
 					}}
 				>
 					{initials}
@@ -70,8 +70,9 @@ export const Avatar = ({
 						width: 10,
 						height: 10,
 						borderRadius: "50%",
-						background: "var(--online, #22c55e)",
+						background: "var(--online, #3A8F5E)",
 						border: "2px solid var(--card-bg, #fff)",
+						boxShadow: "0 0 0 1px rgba(58, 143, 94, 0.15)",
 					}}
 				/>
 			)}
