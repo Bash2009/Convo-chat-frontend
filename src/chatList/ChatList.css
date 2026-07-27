@@ -141,14 +141,47 @@
 	display: flex;
 	align-items: center;
 	justify-content: flex-end;
+	gap: 6px;
 	padding-right: 20px;
 	color: #fff;
+	font-size: 0.78rem;
+	font-weight: 600;
+	font-family: var(--font-body);
+	letter-spacing: 0.02em;
 	transform-origin: right center;
 	animation: swipeDeleteReveal 0.25s ease;
 }
 
 .chatlist-swipe-delete svg {
 	opacity: 0.8;
+}
+
+/* Right-edge hint — a subtle gradient suggesting content beneath */
+.chatlist-item-wrap::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 6px;
+	background: linear-gradient(to left, rgba(197, 59, 59, 0.35), transparent);
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.2s;
+}
+
+.chatlist-item-wrap:hover::after {
+	opacity: 1;
+}
+
+/* On touch devices, keep the hint always visible at low opacity */
+@media (hover: none) {
+	.chatlist-item-wrap::after {
+		opacity: 0.5;
+	}
+	.chatlist-item-wrap:active::after {
+		opacity: 0;
+	}
 }
 
 /* ── Chat list item: gold active indicator ── */
