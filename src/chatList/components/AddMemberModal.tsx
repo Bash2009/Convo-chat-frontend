@@ -8,9 +8,9 @@ interface AddMemberModalProps {
 	onClose: () => void;
 }
 
-function useDebounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
+function useDebounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	return useCallback((...args: any[]) => {
+	return useCallback((...args: unknown[]) => {
 		if (timer.current) clearTimeout(timer.current);
 		timer.current = setTimeout(() => fn(...args), delay);
 	}, [fn, delay]) as unknown as T;
@@ -21,7 +21,7 @@ export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 	const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
 	const [foundUser, setFoundUser] = useState<Participant | null>(null);
 	const [selected, setSelected] = useState<Participant[]>([]);
-	const listenerRef = useRef<((data: any) => void) | null>(null);
+	const listenerRef = useRef<((data: { userExists: boolean; profile: { user: { uid: string; profile: { firstName: string; lastName: string; username: string; avatarUrl: string } } } }) => void) | null>(null);
 
 	useEffect(() => {
 		return () => {

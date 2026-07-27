@@ -3,7 +3,7 @@ import { auth } from "../firebase";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import api, { setTokens } from "../backend";
 import { useNavigate } from "react-router-dom";
-import { useErrorModal, getFriendlyErrorMessage } from "../ErrorModal";
+import { useErrorModal, getFriendlyErrorMessage } from "../errors";
 
 interface SignUpProps {
 	handleChange: () => void;

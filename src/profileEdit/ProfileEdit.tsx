@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, type ChangeEvent } from "reac
 import { useNavigate } from "react-router-dom";
 import api from "../backend";
 import { auth } from "../firebase";
-import { useErrorModal, getFriendlyErrorMessage } from "../ErrorModal";
+import { useErrorModal, getFriendlyErrorMessage } from "../errors";
 import "./ProfileEdit.css";
 
 const DEFAULT_AVATARS = [

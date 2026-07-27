@@ -10,7 +10,7 @@ import StepReview from "./StepReview";
 import "./ProfileSetup.css";
 import api from "../backend";
 import { useNavigate } from "react-router-dom";
-import { useErrorModal, getFriendlyErrorMessage } from "../ErrorModal";
+import { useErrorModal, getFriendlyErrorMessage } from "../errors";
 
 const STEP_LABELS = [
 	"Getting started",
@@ -41,7 +41,7 @@ const validateIdentity = (data: ProfileData): ProfileErrors => {
 	return e;
 };
 
-const validateAbout = (_data: ProfileData): ProfileErrors => {
+const validateAbout = (): ProfileErrors => {
 	return {};
 };
 
@@ -121,7 +121,7 @@ const ProfileSetup = () => {
 			}
 		}
 		if (step === 2) {
-			const errs = validateAbout(data);
+			const errs = validateAbout();
 			setErrors(errs);
 			if (Object.keys(errs).length > 0) return;
 		}

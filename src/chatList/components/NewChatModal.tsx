@@ -3,9 +3,9 @@ import { createPortal } from "react-dom";
 import type { NewChatModalProps } from "../constants";
 import { auth } from "../../firebase";
 
-function useDebounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
+function useDebounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	return useCallback((...args: any[]) => {
+	return useCallback((...args: unknown[]) => {
 		if (timer.current) clearTimeout(timer.current);
 		timer.current = setTimeout(() => fn(...args), delay);
 	}, [fn, delay]) as unknown as T;

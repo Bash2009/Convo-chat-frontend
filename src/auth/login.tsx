@@ -3,7 +3,7 @@ import { useState } from "react";
 import { auth } from "../firebase";
 import api, { setTokens } from "../backend";
 import { useNavigate } from "react-router-dom";
-import { useErrorModal, getFriendlyErrorMessage } from "../ErrorModal";
+import { useErrorModal, getFriendlyErrorMessage } from "../errors";
 
 interface LoginProps {
 	handleChange: () => void;

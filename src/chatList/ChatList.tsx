@@ -9,7 +9,7 @@ import Chat from "./components/Chat";
 import type { ChatStructure, Modal, Participant, UserStatus } from "./constants";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
-import { useErrorModal } from "../ErrorModal";
+import { useErrorModal } from "../errors";
 
 const ChatList = forwardRef(function ChatList(
 	{
