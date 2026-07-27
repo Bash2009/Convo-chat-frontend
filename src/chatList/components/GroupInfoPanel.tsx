@@ -56,6 +56,7 @@ export const GroupInfoPanel = ({ chat, onClose, onlineUids }: GroupInfoPanelProp
 
 					{orderedMembers.map((member) => {
 						const isCurrentUser = member.user.uid === currentUid;
+						const isAdmin = member.user.uid === chat.admin;
 						const profile = member.user.profile;
 						const fullName = `${profile.firstName} ${profile.lastName}`;
 
@@ -72,7 +73,12 @@ export const GroupInfoPanel = ({ chat, onClose, onlineUids }: GroupInfoPanelProp
 									size={44}
 								/>
 								<div className="group-info-member-info">
-									<p className="group-info-member-name">{fullName}</p>
+									<p className="group-info-member-name">
+										{fullName}
+										{isAdmin && (
+											<span className="group-info-member-admin">Admin</span>
+										)}
+									</p>
 									<p className="group-info-member-username">
 										@{profile.username}
 										{isCurrentUser && (

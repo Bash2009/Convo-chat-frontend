@@ -293,6 +293,13 @@
 	font-variation-settings: 'opsz' 72;
 }
 
+.chatlist-modal-desc {
+	font-size: 0.9rem;
+	color: var(--text-muted);
+	line-height: 1.5;
+	margin: 0 0 6px;
+}
+
 .chatlist-modal-input {
 	width: 100%;
 	padding: 9px 13px;
@@ -344,6 +351,14 @@
 }
 .chatlist-modal-start:hover    { background: var(--accent-hover); }
 .chatlist-modal-start:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.chatlist-modal-danger {
+	background: var(--danger);
+}
+.chatlist-modal-danger:hover {
+	background: var(--danger) !important;
+	filter: brightness(0.9);
+}
 
 /* ── GroupInfoPanel ────────────────────── */
 
@@ -443,6 +458,20 @@
 	background: var(--accent-light);
 	padding: 2px 8px;
 	border-radius: 999px;
+}
+
+.group-info-member-admin {
+	display: inline-block;
+	font-size: 0.6rem;
+	font-weight: 600;
+	color: var(--accent-secondary);
+	background: var(--accent-secondary-light);
+	padding: 1px 7px;
+	border-radius: 999px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	vertical-align: middle;
+	margin-left: 6px;
 }
 
 .group-info-member-chevron {

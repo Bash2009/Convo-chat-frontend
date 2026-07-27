@@ -7,6 +7,7 @@ import { auth } from "../firebase";
 import type { ChatStructure } from "./constants";
 import { AddMemberModal } from "./components/AddMemberModal";
 import { GroupInfoPanel } from "./components/GroupInfoPanel";
+import { ConfirmModal } from "./components/ConfirmModal";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, on
 	const [showActions, setShowActions] = useState(false);
 	const [showAddMember, setShowAddMember] = useState(false);
 	const [showGroupInfo, setShowGroupInfo] = useState(false);
+	const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 	const actionsRef = useRef<HTMLDivElement>(null);
 	const messagesRef = useRef<HTMLDivElement>(null);
 	const bottomRef = useRef<HTMLDivElement>(null);
@@ -208,11 +210,17 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, on
 		return () => document.removeEventListener("mousedown", handler);
 	}, []);
 
-	// ── Delete chat ───────────────────────────────────────────────────────────
+	// ── Delete / Leave chat ───────────────────────────────────────────────────
 
-	const handleDeleteChat = () => {
-		if (!window.confirm("Delete this conversation? This cannot be undone.")) return;
-		socket.emit("deleteChat", { chatId: chat.id });
+	const isGroupAdmin = chat.isGroup && chat.admin === currentUid;
+
+	const handleConfirmDelete = () => {
+		if (chat.isGroup && !isGroupAdmin) {
+			socket.emit("leaveGroup", { chatId: chat.id });
+		} else {
+			socket.emit("deleteChat", { chatId: chat.id });
+		}
+		setShowConfirmDelete(false);
 	};
 
 	// ── Send ──────────────────────────────────────────────────────────────────
@@ -320,14 +328,16 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, on
 								className="chatroom-actions-item danger"
 								onClick={() => {
 									setShowActions(false);
-									handleDeleteChat();
+									setShowConfirmDelete(true);
 								}}
 							>
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 									<polyline points="3 6 5 6 21 6" />
 									<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
 								</svg>
-								Delete chat
+								{chat.isGroup
+									? isGroupAdmin ? "Delete group" : "Leave group"
+									: "Delete chat"}
 							</button>
 						</div>
 					)}
@@ -348,6 +358,36 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, on
 					chat={chat}
 					onClose={() => setShowGroupInfo(false)}
 					onlineUids={onlineUids}
+				/>
+			)}
+
+			{/* Confirm delete / leave modal */}
+			{showConfirmDelete && (
+				<ConfirmModal
+					title={
+						!chat.isGroup
+							? "Delete conversation?"
+							: isGroupAdmin
+								? "Delete group?"
+								: "Leave group?"
+					}
+					description={
+						!chat.isGroup
+							? "Are you sure you want to delete this conversation? This cannot be undone."
+							: isGroupAdmin
+								? `Are you sure you want to delete "${headerName}"? This will permanently remove the group for all members.`
+								: `Are you sure you want to leave "${headerName}"? You won't be able to send or receive messages in this group.`
+					}
+					confirmLabel={
+						!chat.isGroup
+							? "Delete"
+							: isGroupAdmin
+								? "Delete group"
+								: "Leave group"
+					}
+					confirmDanger
+					onConfirm={handleConfirmDelete}
+					onCancel={() => setShowConfirmDelete(false)}
 				/>
 			)}
 
