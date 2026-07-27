@@ -7,10 +7,21 @@ import "./ChatList.css";
 import ChatTypeDropdown from "./components/ChatTypeDropdown";
 import Chat from "./components/Chat";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { useNotifications } from "../notifications";
 import type { ChatStructure, Modal, Participant, UserStatus } from "./constants";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { useErrorModal } from "../ErrorModal";
+
+// Sort chats so the most recently active one appears at the top.
+// ChatStructures without a lastMessageAt are pushed to the bottom.
+const sortChatsByRecent = (list: ChatStructure[]): ChatStructure[] =>
+	[...list].sort((a, b) => {
+		if (!a.lastMessageAt && !b.lastMessageAt) return 0;
+		if (!a.lastMessageAt) return 1;
+		if (!b.lastMessageAt) return -1;
+		return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+	});
 
 const ChatList = forwardRef(function ChatList(
 	{
@@ -34,14 +45,50 @@ const ChatList = forwardRef(function ChatList(
 	const [foundUser, setFoundUser]   = useState<Participant>();
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
+	// ── Muted chats (per-device, persisted to localStorage) ────────────────────
+	const [mutedChats, setMutedChats] = useState<Set<string>>(() => {
+		try {
+			const stored = localStorage.getItem("muted-chats");
+			return stored ? new Set(JSON.parse(stored)) : new Set();
+		} catch {
+			return new Set();
+		}
+	});
+
+	const toggleMute = (chatId: string) => {
+		setMutedChats((prev) => {
+			const next = new Set(prev);
+			if (next.has(chatId)) {
+				next.delete(chatId);
+			} else {
+				next.add(chatId);
+			}
+			try {
+				localStorage.setItem("muted-chats", JSON.stringify([...next]));
+			} catch {
+				// localStorage may be full or unavailable — silently ignore
+			}
+			return next;
+		});
+	};
+
+	// ── Browser notifications ──────────────────────────────────────────────────
+	const {
+		permission: notifPermission,
+		requestPermission,
+		showNotification,
+	} = useNotifications();
+
 	// Expose updateChatPreview so ChatRoom can sync the list preview + reset unread when opened
 	useImperativeHandle(ref, () => ({
 		updateChatPreview(chatId: string, text: string, sentAt: string) {
 			setChats((prev) =>
-				prev.map((c) =>
-					c.id === chatId
-						? { ...c, lastMessage: text, lastMessageAt: sentAt }
-						: c,
+				sortChatsByRecent(
+					prev.map((c) =>
+						c.id === chatId
+							? { ...c, lastMessage: text, lastMessageAt: sentAt }
+							: c,
+					),
 				),
 			);
 		},
@@ -55,10 +102,14 @@ const ChatList = forwardRef(function ChatList(
 		getOnlineUids: () => onlineUids,
 	}));
 
-	// Keep a ref in sync with the current activeChatId so the socket-effect
-	// closure (which only mounts once) always reads the latest value.
+	// Keep refs in sync so the socket-effect closure (which only mounts once)
+	// always reads the latest values.
 	const activeChatIdRef = useRef(activeChatId);
 	activeChatIdRef.current = activeChatId;
+	const chatsRef = useRef<ChatStructure[]>(chats);
+	chatsRef.current = chats;
+	const mutedChatsRef = useRef<Set<string>>(mutedChats);
+	mutedChatsRef.current = mutedChats;
 
 	// ── Online status tracking ─────────────────────────────────────────────────
 	// This ref holds a Set of currently-online user UIDs. It's updated via socket
@@ -72,15 +123,18 @@ const ChatList = forwardRef(function ChatList(
 
 	useEffect(() => {
 		socket.connect();
-		socket.emit("getChats", { username: auth.currentUser?.uid });
 
-		// Deduplicate by id to guard against StrictMode double-fire in dev
+		// ── Refresh the chat list ─────────────────────────────────────────
+		// Emit getChats immediately, then poll every 10 seconds so the list
+		// stays in sync even if the server doesn't emit global events.
+		const fetchChats = () => socket.emit("getChats", { username: auth.currentUser?.uid });
+		fetchChats();
+		const pollInterval = setInterval(fetchChats, 10_000);
+
+		// Replace the entire list with fresh data from the server, sorted,
+		// so existing chats get updated lastMessage / unread / etc.
 		socket.on("chats", (data: ChatStructure[]) => {
-			setChats((prev) => {
-				const existingIds = new Set(prev.map((c) => c.id));
-				const fresh = data.filter((c) => !existingIds.has(c.id));
-				return [...prev, ...fresh];
-			});
+			setChats(sortChatsByRecent(data));
 			setLoading(false);
 		});
 
@@ -93,7 +147,7 @@ const ChatList = forwardRef(function ChatList(
 			setChats((prev) => {
 				// Don't add if it already exists (e.g. from a race condition)
 				if (prev.some((c) => c.id === newChat.id)) return prev;
-				return [newChat, ...prev];
+				return sortChatsByRecent([newChat, ...prev]);
 			});
 		});
 
@@ -103,7 +157,9 @@ const ChatList = forwardRef(function ChatList(
 
 		socket.on("memberAdded", (updatedChat: ChatStructure) => {
 			setChats((prev) =>
-				prev.map((c) => (c.id === updatedChat.id ? updatedChat : c)),
+				sortChatsByRecent(
+					prev.map((c) => (c.id === updatedChat.id ? updatedChat : c)),
+				),
 			);
 		});
 
@@ -118,23 +174,57 @@ const ChatList = forwardRef(function ChatList(
 
 		// Keep chat list preview fresh when any room receives a new message.
 		// If the user isn't viewing that chat, also bump the unread counter.
-		socket.on("newMessage", (msg: { chatId: string; text: string; sentAt: string }) => {
+		// If the tab is in the background, fire a browser notification.
+		socket.on("newMessage", (msg: { chatId: string; text: string; sentAt: string; senderId?: string }) => {
 			setChats((prev) =>
-				prev.map((c) =>
-					c.id === msg.chatId
-						? {
-								...c,
-								lastMessage: msg.text,
-								lastMessageAt: msg.sentAt,
-								// Only bump unread for chats the user isn't currently viewing
-								unread:
-									msg.chatId === activeChatIdRef.current
-										? c.unread
-										: c.unread + 1,
-						  }
-						: c,
+				sortChatsByRecent(
+					prev.map((c) =>
+						c.id === msg.chatId
+							? {
+									...c,
+									lastMessage: msg.text,
+									lastMessageAt: msg.sentAt,
+									// Only bump unread for chats the user isn't currently viewing
+									unread:
+										msg.chatId === activeChatIdRef.current
+											? c.unread
+											: c.unread + 1,
+							  }
+							: c,
+					),
 				),
 			);
+
+			// ── Browser notification for background messages ─────────────────
+			// Only notify if the message is for a chat the user isn't currently
+			// viewing AND the chat isn't muted. The notification title is the
+			// sender/group name.
+			if (msg.chatId !== activeChatIdRef.current && !mutedChatsRef.current.has(msg.chatId)) {
+				const chat = chatsRef.current.find((c) => c.id === msg.chatId);
+				if (chat) {
+					let title = "";
+					let icon = "";
+					if (chat.isGroup) {
+						title = chat.name;
+						icon = chat.avatarUrl;
+					} else {
+						// Private chat — use the other participant's name
+						const other = chat.participants.find(
+							(p) => p.user.uid !== auth.currentUser?.uid,
+						);
+						title = other
+							? `${other.user.profile.firstName} ${other.user.profile.lastName}`
+							: "Someone";
+						icon = other?.user.profile.avatarUrl ?? "";
+					}
+					showNotification({
+						title,
+						body: msg.text,
+						icon: icon || undefined,
+						tag: `chat-${msg.chatId}`,
+					});
+				}
+			}
 		});
 
 		// Surface server-side socket errors to the user
@@ -165,6 +255,7 @@ const ChatList = forwardRef(function ChatList(
 		});
 
 		return () => {
+			clearInterval(pollInterval);
 			socket.off("chats");
 			socket.off("connect_error");
 			socket.off("chatCreated");
@@ -297,6 +388,32 @@ const ChatList = forwardRef(function ChatList(
 
 						<ThemeToggle />
 
+						{/* Notification bell */}
+						{notifPermission === "default" && (
+							<button
+								className="chatlist-icon-btn"
+								title="Enable notifications"
+								onClick={requestPermission}
+							>
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+									<path d="M13.73 21a2 2 0 0 1-3.46 0" />
+								</svg>
+							</button>
+						)}
+						{notifPermission === "granted" && (
+							<button
+								className="chatlist-icon-btn"
+								title="Notifications enabled"
+								style={{ color: "var(--accent, #191970)" }}
+							>
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+									<path d="M13.73 21a2 2 0 0 1-3.46 0" />
+								</svg>
+							</button>
+						)}
+
 						<button
 							className="chatlist-icon-btn"
 							title="Sign out"
@@ -363,6 +480,8 @@ const ChatList = forwardRef(function ChatList(
 								avatarUrl={avatarUrl}
 								isGroup={chat.isGroup}
 								isOnline={isOnline}
+								isMuted={mutedChats.has(chat.id)}
+								onToggleMute={toggleMute}
 							/>
 						);
 					})}

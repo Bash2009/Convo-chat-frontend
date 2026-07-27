@@ -561,3 +561,58 @@
 }
 .chatlist-dropdown-item:hover { background: var(--hover-bg); }
 .chatlist-dropdown-item svg   { flex-shrink: 0; color: var(--accent); }
+
+/* ── Muted indicator ─────────────────────────────────────────────────────── */
+
+.chatlist-muted-icon {
+	display: inline-flex;
+	align-items: center;
+	margin-left: 6px;
+	color: var(--text-placeholder);
+	vertical-align: middle;
+}
+
+.chatlist-item.muted .chatlist-item-name {
+	opacity: 0.7;
+}
+
+/* ── Right-click context menu ────────────────────────────────────────────── */
+
+.chatlist-context-menu {
+	position: fixed;
+	z-index: 5000;
+	background: var(--card-bg);
+	border: 1px solid var(--border-strong);
+	border-radius: 10px;
+	box-shadow: var(--shadow-lg);
+	overflow: hidden;
+	min-width: 180px;
+	animation: contextFadeIn 0.1s ease;
+}
+
+@keyframes contextFadeIn {
+	from { opacity: 0; transform: scale(0.95); }
+	to   { opacity: 1; transform: scale(1); }
+}
+
+.chatlist-context-item {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 9px 14px;
+	background: none;
+	border: none;
+	font-family: "DM Sans", sans-serif;
+	font-size: 0.84rem;
+	font-weight: 500;
+	color: var(--text-primary);
+	cursor: pointer;
+	text-align: left;
+	transition: background 0.1s;
+}
+.chatlist-context-item:hover { background: var(--hover-bg); }
+.chatlist-context-item svg {
+	flex-shrink: 0;
+	color: var(--text-placeholder);
+}
