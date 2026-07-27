@@ -1,9 +1,7 @@
-/* Append to App.css or import in ProfileSetup.tsx */
-
 .setup-card {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 16px;
-  box-shadow: 0 4px 32px rgba(25, 25, 112, 0.10);
+  box-shadow: var(--shadow-md);
   width: 100%;
   max-width: 460px;
   overflow: hidden;
@@ -14,11 +12,11 @@
 /* ── Progress bar ───────────────────────── */
 .setup-progress-track {
   height: 3px;
-  background: #eceff1;
+  background: var(--border);
 }
 .setup-progress-fill {
   height: 100%;
-  background: var(--navy);
+  background: var(--accent);
   transition: width 0.4s cubic-bezier(.4, 0, .2, 1);
 }
 
@@ -30,12 +28,12 @@
   padding: 0.9rem 1.75rem 0;
   font-size: 0.8rem;
   font-weight: 500;
-  color: var(--navy);
+  color: var(--accent);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 .setup-step-count {
-  color: #9ca3af;
+  color: var(--text-placeholder);
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
@@ -61,14 +59,14 @@
 .setup-step-body.centered { display: flex; flex-direction: column; align-items: center; text-align: center; }
 
 .setup-title {
-  color: var(--navy);
+  color: var(--accent);
   font-size: 1.3rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   margin-bottom: 0.3rem;
 }
 .setup-desc {
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 0.9rem;
   line-height: 1.6;
   margin-bottom: 1.25rem;
@@ -80,16 +78,16 @@
 .setup-steps-preview { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
 .setup-step-pill {
   display: flex; align-items: center; gap: 6px;
-  background: #eceff1;
+  background: var(--border);
   border-radius: 20px;
   padding: 5px 12px;
   font-size: 0.82rem;
-  color: var(--navy);
+  color: var(--accent);
   font-weight: 500;
 }
 .pill-num {
-  background: var(--navy);
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-inverse);
   border-radius: 50%;
   width: 18px; height: 18px;
   display: flex; align-items: center; justify-content: center;
@@ -103,16 +101,16 @@
 .avatar-preview {
   width: 68px; height: 68px;
   border-radius: 50%;
-  border: 2px solid #eceff1;
+  border: 2px solid var(--border);
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
-  background: #eceff1;
+  background: var(--border);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   transition: border-color 0.2s;
 }
-.avatar-preview:hover { border-color: var(--navy); }
+.avatar-preview:hover { border-color: var(--accent); }
 .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
 .avatar-preview svg { width: 36px; height: 36px; }
 
@@ -125,36 +123,36 @@
 }
 .avatar-preview:hover .avatar-overlay { opacity: 1; }
 
-.avatar-label { font-size: 0.88rem; font-weight: 500; color: var(--navy); margin: 0 0 2px; }
-.avatar-hint  { font-size: 0.8rem; color: #9ca3af; margin: 0 0 8px; }
+.avatar-label { font-size: 0.88rem; font-weight: 500; color: var(--accent); margin: 0 0 2px; }
+.avatar-hint  { font-size: 0.8rem; color: var(--text-placeholder); margin: 0 0 8px; }
 .avatar-defaults { display: flex; gap: 6px; flex-wrap: wrap; }
 
 .avatar-default-opt {
   width: 30px; height: 30px;
   border-radius: 50%;
   border: 2px solid transparent;
-  background: #eceff1;
+  background: var(--border);
   cursor: pointer;
   transition: border-color 0.15s, transform 0.15s;
 }
 .avatar-default-opt:hover   { transform: scale(1.12); }
-.avatar-default-opt.selected { border-color: var(--navy); }
+.avatar-default-opt.selected { border-color: var(--accent); }
 
 /* ── Review step ────────────────────────── */
 .review-avatar {
   width: 84px; height: 84px;
   border-radius: 50%;
-  border: 3px solid #eceff1;
+  border: 3px solid var(--border);
   overflow: hidden;
   display: flex; align-items: center; justify-content: center;
-  background: #eceff1;
+  background: var(--border);
 }
 .review-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .review-avatar svg { width: 84px; height: 84px; }
 
-.review-username { color: #9ca3af; font-size: 0.9rem; margin: -2px 0 0.5rem; }
-.review-bio      { color: #4b5563; font-size: 0.88rem; font-style: italic; margin-bottom: 0.5rem; }
-.review-meta     { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; font-size: 0.82rem; color: #6b7280; }
+.review-username { color: var(--text-placeholder); font-size: 0.9rem; margin: -2px 0 0.5rem; }
+.review-bio      { color: var(--text-muted); font-size: 0.88rem; font-style: italic; margin-bottom: 0.5rem; }
+.review-meta     { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; font-size: 0.82rem; color: var(--text-muted); }
 .review-meta span { display: flex; align-items: center; gap: 4px; }
 
 /* ── Navigation bar ─────────────────────── */
@@ -163,15 +161,15 @@
   align-items: center;
   padding: 1rem 1.75rem 1.5rem;
   gap: 0.5rem;
-  border-top: 1px solid #eceff1;
+  border-top: 1px solid var(--border);
 }
 
 .setup-arrow-btn {
   display: flex; align-items: center; gap: 5px;
   background: none;
-  border: 1.5px solid #dde1e7;
+  border: 1.5px solid var(--border-input);
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--text-muted);
   font-family: 'DM Sans', sans-serif;
   font-size: 0.88rem;
   font-weight: 500;
@@ -179,13 +177,13 @@
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
 }
-.setup-arrow-btn:hover { border-color: var(--navy); color: var(--navy); }
+.setup-arrow-btn:hover { border-color: var(--accent); color: var(--accent); }
 
 .setup-arrow-btn.primary {
-  background: var(--navy);
-  border-color: var(--navy);
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-inverse);
 }
-.setup-arrow-btn.primary:hover { background: var(--navy-hover); border-color: var(--navy-hover); }
+.setup-arrow-btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 
 .setup-submit { padding: 9px 22px; border-radius: 8px; font-size: 0.92rem; }

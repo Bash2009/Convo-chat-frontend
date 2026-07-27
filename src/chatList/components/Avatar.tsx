@@ -70,8 +70,8 @@ export const Avatar = ({
 						width: 10,
 						height: 10,
 						borderRadius: "50%",
-						background: "#22c55e",
-						border: "2px solid #fff",
+						background: "var(--online, #22c55e)",
+						border: "2px solid var(--card-bg, #fff)",
 					}}
 				/>
 			)}

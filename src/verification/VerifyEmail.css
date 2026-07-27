@@ -1,9 +1,9 @@
-/* ── append these rules to App.css ── */
+/* ── Email verification page ──────────────────────────────────────────────── */
 
 .verify-card {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 16px;
-  box-shadow: 0 4px 32px rgba(25, 25, 112, 0.10);
+  box-shadow: var(--shadow-md);
   padding: 2.5rem 2.5rem 2rem;
   width: 100%;
   max-width: 420px;
@@ -23,7 +23,7 @@
 }
 
 .verify-title {
-  color: var(--navy);
+  color: var(--accent);
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -31,27 +31,27 @@
 }
 
 .verify-sub {
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 0.92rem;
   line-height: 1.6;
   margin-bottom: 0;
 }
 
 .verify-email {
-  color: var(--navy);
+  color: var(--accent);
   font-weight: 500;
   word-break: break-all;
 }
 
 .verify-divider {
   width: 100%;
-  border-top: 1px solid #eceff1;
+  border-top: 1px solid var(--border);
   margin: 1.5rem 0;
 }
 
 .verify-hint {
   font-size: 0.88rem;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 1.25rem;
 }
 
@@ -59,7 +59,7 @@
   background: none;
   border: none;
   padding: 0;
-  color: var(--navy);
+  color: var(--accent);
   font-weight: 500;
   font-family: 'DM Sans', sans-serif;
   font-size: 0.88rem;
@@ -84,9 +84,9 @@
 
 .btn-navy-outline {
   background: none;
-  border: 1.5px solid var(--navy);
+  border: 1.5px solid var(--accent);
   border-radius: 8px;
-  color: var(--navy);
+  color: var(--accent);
   font-family: 'DM Sans', sans-serif;
   font-weight: 500;
   font-size: 0.88rem;
@@ -96,6 +96,6 @@
 }
 
 .btn-navy-outline:hover {
-  background-color: var(--navy);
-  color: #fff;
+  background-color: var(--accent);
+  color: var(--text-inverse);
 }

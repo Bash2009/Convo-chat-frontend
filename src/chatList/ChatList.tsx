@@ -6,10 +6,23 @@ import { NewGroupModal } from "./components/NewGroupModal";
 import "./ChatList.css";
 import ChatTypeDropdown from "./components/ChatTypeDropdown";
 import Chat from "./components/Chat";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { useNotifications } from "../notifications";
 import type { ChatStructure, Modal, Participant, UserStatus } from "./constants";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { useErrorModal } from "../ErrorModal";
+import { UndoToast } from "../components/UndoToast";
+
+// Sort chats so the most recently active one appears at the top.
+// ChatStructures without a lastMessageAt are pushed to the bottom.
+const sortChatsByRecent = (list: ChatStructure[]): ChatStructure[] =>
+	[...list].sort((a, b) => {
+		if (!a.lastMessageAt && !b.lastMessageAt) return 0;
+		if (!a.lastMessageAt) return 1;
+		if (!b.lastMessageAt) return -1;
+		return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+	});
 
 const ChatList = forwardRef(function ChatList(
 	{
@@ -33,33 +46,132 @@ const ChatList = forwardRef(function ChatList(
 	const [foundUser, setFoundUser]   = useState<Participant>();
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
-	// Expose updateChatPreview so ChatRoom can update the list when new messages arrive
+	// ── Undo delete toast ────────────────────────────────────────────────────
+	const [undoChat, setUndoChat] = useState<{ chat: ChatStructure; chatName: string } | null>(null);
+
+	const requestDelete = (chat: ChatStructure) => {
+		// Immediately confirm any previous pending deletion before starting a new one
+		if (undoChat) {
+			socket.emit("deleteChat", { chatId: undoChat.chat.id });
+		}
+
+		const chatName = chat.isGroup
+			? chat.name
+			: chat.participants
+					.find((p) => p.user.uid !== auth.currentUser?.uid)
+					?.user.profile.firstName ?? "Unknown";
+
+		// Immediately remove from the list
+		setChats((prev) => prev.filter((c) => c.id !== chat.id));
+
+		// Set up the undo toast
+		setUndoChat({ chat, chatName });
+	};
+
+	const handleUndoDelete = () => {
+		if (!undoChat) return;
+		// Restore the chat to the list
+		setChats((prev) => sortChatsByRecent([undoChat.chat, ...prev]));
+		setUndoChat(null);
+	};
+
+	const handleExpireDelete = () => {
+		if (!undoChat) return;
+		// Actually emit the delete event now
+		socket.emit("deleteChat", { chatId: undoChat.chat.id });
+		setUndoChat(null);
+	};
+
+	// ── Muted chats (per-device, persisted to localStorage) ────────────────────
+	const [mutedChats, setMutedChats] = useState<Set<string>>(() => {
+		try {
+			const stored = localStorage.getItem("muted-chats");
+			return stored ? new Set(JSON.parse(stored)) : new Set();
+		} catch {
+			return new Set();
+		}
+	});
+
+	const toggleMute = (chatId: string) => {
+		setMutedChats((prev) => {
+			const next = new Set(prev);
+			if (next.has(chatId)) {
+				next.delete(chatId);
+			} else {
+				next.add(chatId);
+			}
+			try {
+				localStorage.setItem("muted-chats", JSON.stringify([...next]));
+			} catch {
+				// localStorage may be full or unavailable — silently ignore
+			}
+			return next;
+		});
+	};
+
+	// ── Browser notifications ──────────────────────────────────────────────────
+	const {
+		permission: notifPermission,
+		requestPermission,
+		showNotification,
+	} = useNotifications();
+
+	// Expose updateChatPreview so ChatRoom can sync the list preview + reset unread when opened
 	useImperativeHandle(ref, () => ({
 		updateChatPreview(chatId: string, text: string, sentAt: string) {
 			setChats((prev) =>
-				prev.map((c) =>
-					c.id === chatId
-						? { ...c, lastMessage: text, lastMessageAt: sentAt }
-						: c,
+				sortChatsByRecent(
+					prev.map((c) =>
+						c.id === chatId
+							? { ...c, lastMessage: text, lastMessageAt: sentAt }
+							: c,
+					),
 				),
 			);
 		},
+		resetUnread(chatId: string) {
+			setChats((prev) =>
+				prev.map((c) =>
+					c.id === chatId ? { ...c, unread: 0 } : c,
+				),
+			);
+		},
+		getOnlineUids: () => onlineUids,
 	}));
+
+	// Keep refs in sync so the socket-effect closure (which only mounts once)
+	// always reads the latest values.
+	const activeChatIdRef = useRef(activeChatId);
+	activeChatIdRef.current = activeChatId;
+	const chatsRef = useRef<ChatStructure[]>(chats);
+	chatsRef.current = chats;
+	const mutedChatsRef = useRef<Set<string>>(mutedChats);
+	mutedChatsRef.current = mutedChats;
+
+	// ── Online status tracking ─────────────────────────────────────────────────
+	// This ref holds a Set of currently-online user UIDs. It's updated via socket
+	// events and exposed to parent components through the imperative handle so that
+	// ChatRoom and GroupInfoPanel can show live status dots.
+
+	const [onlineUids, setOnlineUids] = useState<Set<string>>(new Set());
 
 	// ── Socket lifecycle ──────────────────────────────────────────────────────
 	// ChatList owns the single shared socket. ChatRoom never calls connect/disconnect.
 
 	useEffect(() => {
 		socket.connect();
-		socket.emit("getChats", { username: auth.currentUser?.uid });
 
-		// Deduplicate by id to guard against StrictMode double-fire in dev
+		// ── Refresh the chat list ─────────────────────────────────────────
+		// Emit getChats immediately, then poll every 10 seconds so the list
+		// stays in sync even if the server doesn't emit global events.
+		const fetchChats = () => socket.emit("getChats", { username: auth.currentUser?.uid });
+		fetchChats();
+		const pollInterval = setInterval(fetchChats, 10_000);
+
+		// Replace the entire list with fresh data from the server, sorted,
+		// so existing chats get updated lastMessage / unread / etc.
 		socket.on("chats", (data: ChatStructure[]) => {
-			setChats((prev) => {
-				const existingIds = new Set(prev.map((c) => c.id));
-				const fresh = data.filter((c) => !existingIds.has(c.id));
-				return [...prev, ...fresh];
-			});
+			setChats(sortChatsByRecent(data));
 			setLoading(false);
 		});
 
@@ -72,7 +184,7 @@ const ChatList = forwardRef(function ChatList(
 			setChats((prev) => {
 				// Don't add if it already exists (e.g. from a race condition)
 				if (prev.some((c) => c.id === newChat.id)) return prev;
-				return [newChat, ...prev];
+				return sortChatsByRecent([newChat, ...prev]);
 			});
 		});
 
@@ -82,7 +194,9 @@ const ChatList = forwardRef(function ChatList(
 
 		socket.on("memberAdded", (updatedChat: ChatStructure) => {
 			setChats((prev) =>
-				prev.map((c) => (c.id === updatedChat.id ? updatedChat : c)),
+				sortChatsByRecent(
+					prev.map((c) => (c.id === updatedChat.id ? updatedChat : c)),
+				),
 			);
 		});
 
@@ -95,15 +209,67 @@ const ChatList = forwardRef(function ChatList(
 			}
 		});
 
-		// Keep chat list preview fresh when any room receives a new message
-		socket.on("newMessage", (msg: { chatId: string; text: string; sentAt: string }) => {
+		// Keep chat list preview fresh when any room receives a new message.
+		// If the user isn't viewing that chat, also bump the unread counter.
+		// If the tab is in the background, fire a browser notification.
+		socket.on("newMessage", (msg: { chatId: string; text: string; sentAt: string; senderId?: string }) => {
+			const currentUid = auth.currentUser?.uid;
 			setChats((prev) =>
-				prev.map((c) =>
-					c.id === msg.chatId
-						? { ...c, lastMessage: msg.text, lastMessageAt: msg.sentAt }
-						: c,
+				sortChatsByRecent(
+					prev.map((c) =>
+						c.id === msg.chatId
+							? {
+									...c,
+									lastMessage: msg.text,
+									lastMessageAt: msg.sentAt,
+									lastMessageSenderId: msg.senderId,
+									// If the current user sent it, mark as sent (will update via status events)
+									// Otherwise, no status needed (incoming message)
+									lastMessageStatus:
+										msg.senderId === currentUid
+											? (c.lastMessageStatus ?? "sent")
+											: undefined,
+									// Only bump unread for chats the user isn't currently viewing
+									unread:
+										msg.chatId === activeChatIdRef.current
+											? c.unread
+											: c.unread + 1,
+							  }
+							: c,
+					),
 				),
 			);
+
+			// ── Browser notification for background messages ─────────────────
+			// Only notify if the message is for a chat the user isn't currently
+			// viewing AND the chat isn't muted. The notification title is the
+			// sender/group name.
+			if (msg.chatId !== activeChatIdRef.current && !mutedChatsRef.current.has(msg.chatId)) {
+				const chat = chatsRef.current.find((c) => c.id === msg.chatId);
+				if (chat) {
+					let title = "";
+					let icon = "";
+					if (chat.isGroup) {
+						title = chat.name;
+						icon = chat.avatarUrl;
+					} else {
+						// Private chat — use the other participant's name
+						const other = chat.participants.find(
+							(p) => p.user.uid !== auth.currentUser?.uid,
+						);
+						title = other
+							? `${other.user.profile.firstName} ${other.user.profile.lastName}`
+							: "Someone";
+						icon = other?.user.profile.avatarUrl ?? "";
+					}
+					showNotification({
+						title,
+						body: msg.text,
+						icon: icon || undefined,
+						tag: `chat-${msg.chatId}`,
+					});
+				}
+			}
 		});
 
 		// Surface server-side socket errors to the user
@@ -111,7 +277,35 @@ const ChatList = forwardRef(function ChatList(
 			showError(err.message || `Something went wrong while processing "${err.event}".`);
 		});
 
+		// Sync unread counts pushed from the server (e.g., after markRead on
+		// another device, or when the server resets unread for this user).
+		socket.on("unreadUpdated", ({ chatId, unread }: { chatId: string; unread: number }) => {
+			setChats((prev) =>
+				prev.map((c) =>
+					c.id === chatId ? { ...c, unread } : c,
+				),
+			);
+		});
+
+		// ── Message status updates ─────────────────────────────────────────
+		// The server sends messageStatus events without a chatId, so we can't
+		// map them back to the sidebar directly. The 10-second poll updates
+		// lastMessageStatus from the server's ChatStructure response.
+
+		// ── Online / offline tracking ────────────────────────────────────────
+		socket.on("userOnline", ({ uid }: { uid: string }) => {
+			setOnlineUids((prev) => new Set(prev).add(uid));
+		});
+		socket.on("userOffline", ({ uid }: { uid: string }) => {
+			setOnlineUids((prev) => {
+				const next = new Set(prev);
+				next.delete(uid);
+				return next;
+			});
+		});
+
 		return () => {
+			clearInterval(pollInterval);
 			socket.off("chats");
 			socket.off("connect_error");
 			socket.off("chatCreated");
@@ -120,9 +314,13 @@ const ChatList = forwardRef(function ChatList(
 			socket.off("userSearch");
 			socket.off("newMessage");
 			socket.off("error");
+			socket.off("unreadUpdated");
+			socket.off("userOnline");
+			socket.off("userOffline");
 			socket.disconnect();
 		};
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	// ── Dropdown close on outside click ──────────────────────────────────────
 
@@ -136,10 +334,17 @@ const ChatList = forwardRef(function ChatList(
 	}, []);
 
 	// Reset user search status when modal opens/closes
-	// eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on modal change
 	useEffect(() => { setUserStatus("idle"); }, [modal]);
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
+
+	const handleSelectChat = (id: string) => {
+		// Reset unread locally when the user opens a chat
+		setChats((prev) =>
+			prev.map((c) => (c.id === id ? { ...c, unread: 0 } : c)),
+		);
+		onSelectChat(id, chats);
+	};
 
 	const handlePrivateChat = (uid: string) => {
 		socket.emit("createChat", { members: [auth.currentUser?.uid, uid] });
@@ -159,6 +364,23 @@ const ChatList = forwardRef(function ChatList(
 	const handleSearch = (username: string) => {
 		setUserStatus("loading");
 		socket.emit("getUser", { username });
+	};
+
+	const handleMarkAllRead = () => {
+		const currentUid = auth.currentUser?.uid;
+		if (!currentUid) return;
+
+		// Reset all unread counts locally
+		setChats((prev) =>
+			prev.map((c) => {
+				if (c.unread > 0) {
+					// Tell the server to mark this chat as read
+					socket.emit("markRead", { chatId: c.id, uid: currentUid });
+					return { ...c, unread: 0 };
+				}
+				return c;
+			}),
+		);
 	};
 
 	const handleLogout = async () => {
@@ -231,6 +453,49 @@ const ChatList = forwardRef(function ChatList(
 							</svg>
 						</button>
 
+						<ThemeToggle />
+
+						{/* Notification bell */}
+						{notifPermission === "default" && (
+							<button
+								className="chatlist-icon-btn"
+								title="Enable notifications"
+								onClick={requestPermission}
+							>
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+									<path d="M13.73 21a2 2 0 0 1-3.46 0" />
+								</svg>
+							</button>
+						)}
+						{notifPermission === "granted" && (
+							<button
+								className="chatlist-icon-btn"
+								title="Notifications enabled"
+								style={{ color: "var(--accent, #191970)" }}
+							>
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+									<path d="M13.73 21a2 2 0 0 1-3.46 0" />
+								</svg>
+							</button>
+						)}
+
+						{/* Mark all as read — only show when there are unread chats */}
+						{chats.some((c) => c.unread > 0) && (
+							<button
+								className="chatlist-icon-btn"
+								title="Mark all as read"
+								onClick={handleMarkAllRead}
+							>
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+									<circle cx="12" cy="12" r="3" />
+									<polyline points="9 12 11 14 15 10" />
+								</svg>
+							</button>
+						)}
+
 						<button
 							className="chatlist-icon-btn"
 							title="Sign out"
@@ -283,25 +548,44 @@ const ChatList = forwardRef(function ChatList(
 							avatarUrl = profile?.avatarUrl ?? "";
 						}
 
+						const isOnline = !chat.isGroup && onlineUids.has(participant?.user.uid ?? "");
+
 						return (
 							<Chat
 								key={chat.id}
 								chat={chat}
 								activeChatId={activeChatId!}
-								onSelectChat={(id) => onSelectChat(id, chats)}
+								onSelectChat={handleSelectChat}
 								i={i}
 								fullName={fullName}
 								p={chat.isGroup ? undefined : participant?.user.profile}
 								avatarUrl={avatarUrl}
 								isGroup={chat.isGroup}
+								isOnline={isOnline}
+								isMuted={mutedChats.has(chat.id)}
+								onToggleMute={toggleMute}
+								onDeleteChat={requestDelete}
 							/>
 						);
 					})}
 				</div>
+
+				{/* Undo toast */}
+				{undoChat && (
+					<UndoToast
+						chatName={undoChat.chatName}
+						onUndo={handleUndoDelete}
+						onExpire={handleExpireDelete}
+					/>
+				)}
 			</div>
 		</>
 	);
 });
 
-export type ChatListHandle = { updateChatPreview: (chatId: string, text: string, sentAt: string) => void };
+export type ChatListHandle = {
+	updateChatPreview: (chatId: string, text: string, sentAt: string) => void;
+	resetUnread: (chatId: string) => void;
+	getOnlineUids: () => Set<string>;
+};
 export default ChatList;

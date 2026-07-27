@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { auth } from "../firebase";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import api from "../backend";
+import api, { setTokens } from "../backend";
 import { useNavigate } from "react-router-dom";
 import { useErrorModal, getFriendlyErrorMessage } from "../ErrorModal";
 
@@ -75,8 +75,7 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 					email,
 					uid: user.uid,
 				});
-				localStorage.setItem("access_token", data.access_token);
-				localStorage.setItem("refresh_token", data.refresh_token);
+				setTokens(data.access_token, data.refresh_token);
 				navigate("/verify-email");
 			} catch (err) {
 				showError(getFriendlyErrorMessage(err));

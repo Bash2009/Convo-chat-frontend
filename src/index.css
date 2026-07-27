@@ -1,7 +1,117 @@
-body {
-  margin: 0;
-  display: flex;
-  overflow-x: hidden;
-  min-width: 320px;
-  min-height: 100vh;
+/* ── Theme: Light (default) ──────────────────────────────────────────────── */
+:root {
+	/* Page & cards */
+	--page-bg: #f8f9fa;
+	--card-bg: #fff;
+	--hover-bg: #f3f4f6;
+	--active-bg: #f0f2ff;
+	--input-bg: #f8f9fa;
+
+	/* Borders */
+	--border: #eceff1;
+	--border-strong: #e5e7eb;
+	--border-input: #dde1e7;
+
+	/* Text */
+	--text-primary: #111827;
+	--text-secondary: #374151;
+	--text-muted: #6b7280;
+	--text-placeholder: #9ca3af;
+	--text-inverse: #fff;
+
+	/* Accent (navy) */
+	--accent: #191970;
+	--accent-hover: #0f1b6b;
+	--accent-light: #e0e4ff;
+	--accent-active: #f0f2ff;
+
+	/* Semantic */
+	--danger: #ef4444;
+	--danger-bg: #fef2f2;
+	--online: #22c55e;
+
+	/* Shadows & overlays */
+	--shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
+	--shadow-md: 0 4px 24px rgba(0, 0, 0, 0.08);
+	--shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+	--shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.18);
+	--overlay: rgba(0, 0, 0, 0.45);
+
+	/* Chat bubbles */
+	--bubble-own: #191970;
+	--bubble-other: #fff;
+
+	/* Legacy aliases (for backward compat with existing CSS) */
+	--navy: var(--accent);
+	--navy-hover: var(--accent-hover);
+	--bg: #eceff1;
 }
+
+/* ── Theme: Dark ─────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+	--page-bg: #0f1117;
+	--card-bg: #1a1d2e;
+	--hover-bg: #25283d;
+	--active-bg: #1e2240;
+	--input-bg: #1a1d2e;
+
+	--border: #2d3154;
+	--border-strong: #3d4270;
+	--border-input: #3d4270;
+
+	--text-primary: #e4e6eb;
+	--text-secondary: #b0b3b8;
+	--text-muted: #8a8d91;
+	--text-placeholder: #6b7280;
+	--text-inverse: #fff;
+
+	--accent: #5b5fff;
+	--accent-hover: #7b7fff;
+	--accent-light: #25284a;
+	--accent-active: #1e2240;
+
+	--danger: #f87171;
+	--danger-bg: #2d1b1b;
+	--online: #4ade80;
+
+	--shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.25);
+	--shadow-md: 0 4px 24px rgba(0, 0, 0, 0.35);
+	--shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+	--shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.5);
+	--overlay: rgba(0, 0, 0, 0.65);
+
+	--bubble-own: #5b5fff;
+	--bubble-other: #25283d;
+
+	--navy: var(--accent);
+	--navy-hover: var(--accent-hover);
+	--bg: #0f1117;
+}
+
+body {
+	margin: 0;
+	display: flex;
+	overflow-x: hidden;
+	min-width: 320px;
+	min-height: 100vh;
+}
+
+/* Smooth transition when switching themes.
+   Only target theme-affecting properties to avoid animating layout/style on
+   initial paint. The .no-transitions class on <html> during boot prevents
+   flash transitions; it's removed by JavaScript after mount. */
+html.no-transitions *,
+html.no-transitions *::before,
+html.no-transitions *::after {
+	transition: none !important;
+}
+
+*,
+*::before,
+*::after {
+	transition: background-color 0.2s ease, border-color 0.2s ease,
+		color 0.2s ease;
+}
+
+/* On initial load, remove the .no-transitions class so future theme switches
+   animate smoothly. Applied by the IIFE in main.tsx. */

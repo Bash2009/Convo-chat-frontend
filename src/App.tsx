@@ -10,6 +10,7 @@ import RequireAuth from "./auth/RequireAuth";
 import VerifyEmail from "./verification/VerifyEmail";
 import ProfileSetup from "./profileSetup/ProfileSetup";
 import ProfileEdit from "./profileEdit/ProfileEdit";
+import ProfileView from "./profileView/ProfileView";
 import ChatLayout from "./chatList/ChatLayout";
 
 const App = () => {
@@ -43,6 +44,14 @@ const App = () => {
 					element={
 						<RequireAuth>
 							<ProfileEdit />
+						</RequireAuth>
+					}
+				/>
+				<Route
+					path="/profile/:username"
+					element={
+						<RequireAuth>
+							<ProfileView />
 						</RequireAuth>
 					}
 				/>

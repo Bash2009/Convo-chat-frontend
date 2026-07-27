@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import ChatList from "./ChatList";
 import type { ChatListHandle } from "./ChatList";
 import ChatRoom from "./ChatRoom";
@@ -23,11 +23,24 @@ const ChatLayout = () => {
 		chatListRef.current?.updateChatPreview(chatId, text, sentAt);
 	};
 
+	const handleChatRead = (chatId: string) => {
+		chatListRef.current?.resetUnread(chatId);
+	};
+
 	const handleChatDeleted = (chatId: string) => {
 		if (activeChat?.id === chatId) {
 			setActiveChat(null);
 		}
 	};
+
+	const [onlineUids, setOnlineUids] = useState<Set<string>>(new Set());
+
+	// Sync onlineUids from ChatList after each render via a ref-read effect
+	useEffect(() => {
+		const uids = chatListRef.current?.getOnlineUids() ?? new Set();
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- ref read, not stale closure
+		setOnlineUids(uids);
+	}, []);
 
 	return (
 		<div className="chat-layout">
@@ -47,7 +60,9 @@ const ChatLayout = () => {
 						chat={activeChat}
 						onBack={() => setActiveChat(null)}
 						onPreviewUpdate={handlePreviewUpdate}
+						onChatRead={handleChatRead}
 						onChatDeleted={handleChatDeleted}
+						onlineUids={onlineUids}
 					/>
 				) : (
 					<div className="chat-layout-empty">

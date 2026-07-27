@@ -14,6 +14,8 @@ export interface ChatStructure {
 	}[];
 	lastMessage: string;
 	lastMessageAt: string;
+	lastMessageSenderId?: string;
+	lastMessageStatus?: "sent" | "delivered" | "read";
 	unread: number;
 	isGroup: boolean;
 	avatarUrl: string;

@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../backend";
 import { Avatar } from "./components/Avatar";
+import { StatusTick } from "../components/StatusTick";
 import { auth } from "../firebase";
 import type { ChatStructure } from "./constants";
 import { AddMemberModal } from "./components/AddMemberModal";
+import { GroupInfoPanel } from "./components/GroupInfoPanel";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -20,7 +22,9 @@ interface Props {
 	chat: ChatStructure;
 	onBack: () => void;
 	onPreviewUpdate?: (chatId: string, text: string, sentAt: string) => void;
+	onChatRead?: (chatId: string) => void;
 	onChatDeleted?: (chatId: string) => void;
+	onlineUids?: Set<string>;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -49,63 +53,26 @@ const formatDayLabel = (iso: string) => {
 	});
 };
 
-// ── Tick icon ──────────────────────────────────────────────────────────────
-
-const StatusTick = ({ status }: { status: Message["status"] }) => {
-	const color   = status === "read" ? "#191970" : "currentColor";
-	const opacity = status === "sent" ? 0.5 : 1;
-
-	if (status === "sent") {
-		return (
-			<svg
-				className="chatroom-tick"
-				width="12" height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke={color}
-				strokeOpacity={opacity}
-				strokeWidth="2.5"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			>
-				<polyline points="20 6 9 17 4 12" />
-			</svg>
-		);
-	}
-
-	return (
-		<svg
-			className="chatroom-tick"
-			width="18" height="12"
-			viewBox="0 0 36 24"
-			fill="none"
-			stroke={color}
-			strokeWidth="2.5"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-		>
-			<polyline points="36 6 17 17 12 12" />
-			<polyline points="24 6 9 17 4 12" />
-		</svg>
-	);
-};
-
 // ── ChatRoom ───────────────────────────────────────────────────────────────
 // This component does NOT own the socket connection — ChatList does.
 // ChatRoom only emits joinChat / leaveChat and listens for room-scoped events.
 
-const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
+const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, onlineUids }: Props) => {
 	const navigate   = useNavigate();
 	const currentUid = auth.currentUser?.uid ?? "";
 
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput]       = useState("");
 	const [loading, setLoading]   = useState(true);
+	const [hasMore, setHasMore]   = useState(true);
 	const [showActions, setShowActions] = useState(false);
 	const [showAddMember, setShowAddMember] = useState(false);
+	const [showGroupInfo, setShowGroupInfo] = useState(false);
 	const actionsRef = useRef<HTMLDivElement>(null);
+	const messagesRef = useRef<HTMLDivElement>(null);
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const inputRef  = useRef<HTMLTextAreaElement>(null);
+	const isLoadingMore = useRef(false);
 
 	const otherParticipant = !chat.isGroup
 		? chat.participants.find((p) => p.user.uid !== currentUid)?.user
@@ -121,12 +88,17 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		? chat.avatarUrl
 		: otherParticipant?.profile.avatarUrl ?? "";
 
+	const otherIsOnline = !chat.isGroup && otherParticipant
+		? (onlineUids?.has(otherParticipant.uid) ?? false)
+		: false;
+
 	// ── Socket events (room-scoped only) ──────────────────────────────────────
 
 	useEffect(() => {
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- reset state on chat switch
 		setLoading(true);
 		setMessages([]);
+		setHasMore(true);
+		isLoadingMore.current = false;
 
 		// Join the room — server responds with 'messages' (history)
 		socket.emit("joinChat", { chatId: chat.id });
@@ -134,6 +106,26 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		socket.on("messages", (msgs: Message[]) => {
 			setMessages(msgs);
 			setLoading(false);
+		});
+
+		// Handle paginated load of older messages
+		socket.on("moreMessages", (olderMessages: Message[]) => {
+			if (olderMessages.length === 0) {
+				setHasMore(false);
+			} else {
+				// Maintain scroll position after prepending older messages
+				const container = messagesRef.current;
+				const prevHeight = container?.scrollHeight ?? 0;
+
+				setMessages((prev) => [...olderMessages, ...prev]);
+
+				if (container) {
+					requestAnimationFrame(() => {
+						container.scrollTop = container.scrollHeight - prevHeight;
+					});
+				}
+			}
+			isLoadingMore.current = false;
 		});
 
 		socket.on("newMessage", (msg: Message) => {
@@ -159,22 +151,46 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		};
 		socket.on("chatDeleted", onChatDeletedHandler);
 
-		// Mark existing messages as read when the room opens
-		socket.emit("markRead", { chatId: chat.id, uid: currentUid });
+		// Mark existing messages as read when the room opens.
+		// The ack callback tells the server to persist the updated unread count.
+		// If the server doesn't support acks, the frontend already reset unread
+		// locally when the user clicked the chat, so this is a best-effort sync.
+		socket.emit("markRead", { chatId: chat.id, uid: currentUid }, () => {
+			onChatRead?.(chat.id);
+		});
 
 		return () => {
 			socket.emit("leaveChat", { chatId: chat.id });
 			socket.off("messages");
+			socket.off("moreMessages");
 			socket.off("newMessage");
 			socket.off("messageStatus");
 			socket.off("chatDeleted", onChatDeletedHandler);
 		};
+	// eslint-disable-next-line react-hooks/exhaustive-deps -- callbacks are stable or handled via chat.id changes
 	}, [chat.id, currentUid]);
 
-	// Scroll to bottom on new messages
+	// ── Scroll-to-bottom on new messages ────────────────────────────────────
+
 	useEffect(() => {
 		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, [messages]);
+
+	// ── Infinite scroll: load older messages on scroll-to-top ───────────────
+
+	const handleMessagesScroll = () => {
+		const container = messagesRef.current;
+		if (!container || isLoadingMore.current || !hasMore) return;
+
+		// Trigger load when the user scrolls within 80px of the top
+		if (container.scrollTop <= 80) {
+			isLoadingMore.current = true;
+			socket.emit("loadMoreMessages", {
+				chatId: chat.id,
+				before: messages[0]?.id,
+			});
+		}
+	};
 
 	// ── Close actions dropdown on outside click ─────────────────────────────
 
@@ -238,17 +254,27 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 					<Avatar
 						name={headerName}
 						avatarUrl={headerAvatar}
-						online={false}
+						online={otherIsOnline}
 						size={36}
 					/>
 				</div>
 
-				<div className="chatroom-header-info">
+				<div
+					className="chatroom-header-info"
+					onClick={() => {
+						if (chat.isGroup) {
+							setShowGroupInfo(true);
+						} else if (otherParticipant?.profile.username) {
+							navigate(`/profile/${otherParticipant.profile.username}`);
+						}
+					}}
+					style={{ cursor: "pointer" }}
+				>
 					<p className="chatroom-header-name">{headerName}</p>
 					<p className="chatroom-header-sub">
 						{chat.isGroup
-							? `${chat.participants.length} members`
-							: "Tap avatar to view profile"}
+							? `${chat.participants.length} ${chat.participants.length === 1 ? "member" : "members"}`
+							: "Tap here to view profile"}
 					</p>
 				</div>
 
@@ -311,8 +337,17 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 				/>
 			)}
 
+			{/* Group info panel */}
+			{showGroupInfo && chat.isGroup && (
+				<GroupInfoPanel
+					chat={chat}
+					onClose={() => setShowGroupInfo(false)}
+					onlineUids={onlineUids}
+				/>
+			)}
+
 			{/* Messages */}
-			<div className="chatroom-messages">
+			<div className="chatroom-messages" ref={messagesRef} onScroll={handleMessagesScroll}>
 				{loading && <p className="chatroom-loading">Loading…</p>}
 
 				{!loading && messages.length === 0 && (
@@ -366,7 +401,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 										<span className="chatroom-bubble-time">
 											{formatMsgTime(msg.sentAt)}
 										</span>
-										{isOwn && <StatusTick status={msg.status} />}
+										{isOwn && <StatusTick status={msg.status} size="default" />}
 									</div>
 								</div>
 							</div>
