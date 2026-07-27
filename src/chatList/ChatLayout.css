@@ -10,13 +10,13 @@
 /* Sidebar */
 .chat-layout-sidebar {
 	flex-shrink: 0;
-	width: 360px;
+	width: 340px;
 	height: 100%;
 	border-right: 1px solid var(--border);
 	background: var(--card-bg);
 }
 
-/* Room panel — hidden until a chat is selected */
+/* Room panel */
 .chat-layout-room {
 	flex: 1;
 	display: flex;
@@ -30,7 +30,7 @@
 	pointer-events: all;
 }
 
-/* Empty-state placeholder shown when no chat is selected */
+/* Empty-state — designed composition */
 .chat-layout-empty {
 	flex: 1;
 	display: flex;
@@ -39,11 +39,62 @@
 	justify-content: center;
 	gap: 12px;
 	color: var(--text-placeholder);
-	font-family: "DM Sans", sans-serif;
+	font-family: var(--font-body);
 	font-size: 0.9rem;
+	position: relative;
+	overflow: hidden;
 }
 
-/* ── Mobile: one panel at a time ──────────────────────────────────────── */
+.chat-layout-empty::before {
+	content: '';
+	position: absolute;
+	width: 320px;
+	height: 320px;
+	border-radius: 50%;
+	background: radial-gradient(circle, rgba(201, 80, 79, 0.04), transparent 70%);
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	pointer-events: none;
+}
+
+@keyframes emptyBrandPulse {
+	0%, 100% { opacity: 0.25; transform: scale(1); }
+	50%      { opacity: 0.4;  transform: scale(1.05); }
+}
+
+.chat-layout-empty-brand {
+	font-family: var(--font-display);
+	font-size: 3rem;
+	font-weight: 700;
+	color: var(--accent);
+	letter-spacing: -0.04em;
+	font-variation-settings: 'opsz' 144;
+	opacity: 0.3;
+	line-height: 1;
+	margin: 0;
+	animation: emptyBrandPulse 3s ease-in-out infinite;
+}
+
+.chat-layout-empty-title {
+	font-family: var(--font-display);
+	font-size: 1rem;
+	font-weight: 500;
+	color: var(--text-muted);
+	margin: 0;
+	font-variation-settings: 'opsz' 36;
+}
+
+.chat-layout-empty-sub {
+	font-size: 0.82rem;
+	color: var(--text-placeholder);
+	margin: 0;
+	max-width: 240px;
+	text-align: center;
+	line-height: 1.5;
+}
+
+/* Mobile */
 @media (max-width: 767px) {
 	.chat-layout-sidebar {
 		width: 100%;
@@ -70,7 +121,7 @@
 	}
 }
 
-/* ── ChatRoom styles ──────────────────────────────────────────────────── */
+/* ── ChatRoom styles ──────────────────── */
 
 .chatroom-root {
 	display: flex;
@@ -78,7 +129,7 @@
 	flex: 1;
 	height: 100%;
 	background: var(--page-bg);
-	font-family: "DM Sans", sans-serif;
+	font-family: var(--font-body);
 	min-width: 0;
 }
 
@@ -95,7 +146,7 @@
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	padding: 0.85rem 1.25rem;
+	padding: 0.75rem 1.25rem;
 	background: var(--card-bg);
 	border-bottom: 1px solid var(--border);
 	flex-shrink: 0;
@@ -108,7 +159,10 @@
 	color: var(--accent);
 	cursor: pointer;
 	padding: 4px;
+	border-radius: var(--radius-sm);
+	transition: background 0.15s;
 }
+.chatroom-back-btn:hover { background: var(--hover-bg); }
 @media (max-width: 767px) {
 	.chatroom-back-btn { display: flex; align-items: center; }
 }
@@ -117,76 +171,118 @@
 
 .chatroom-header-info { flex: 1; min-width: 0; }
 .chatroom-header-name {
+	font-family: var(--font-display);
 	font-weight: 600;
-	font-size: 0.95rem;
-	color: var(--accent);
+	font-size: 1rem;
+	color: var(--text-primary);
 	margin: 0;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	font-variation-settings: 'opsz' 48;
 }
 .chatroom-header-sub {
-	font-size: 0.75rem;
-	color: var(--text-placeholder);
+	font-size: 0.72rem;
+	color: var(--text-muted);
 	margin: 0;
+	font-family: var(--font-body);
 }
 
-/* Messages */
+/* Messages container */
 .chatroom-messages {
 	flex: 1;
 	overflow-y: auto;
-	padding: 1rem 1.25rem;
+	padding: 0.5rem 1.25rem 0.75rem;
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 }
+
 .chatroom-messages::-webkit-scrollbar { width: 0; }
 
+/* Day label — thin rule with subtle pill */
 .chatroom-day-label {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	margin: 0.75rem 0 0.5rem;
+	margin: 1rem 0 0.6rem;
+	position: relative;
+}
+.chatroom-day-label::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 50%;
+	height: 1px;
+	background: var(--border);
 }
 .chatroom-day-label span {
-	background: var(--border);
+	background: var(--page-bg);
 	color: var(--text-muted);
-	font-size: 0.75rem;
+	font-size: 0.65rem;
 	font-weight: 500;
-	border-radius: 20px;
-	padding: 3px 12px;
+	font-family: var(--font-mono);
+	border-radius: 999px;
+	padding: 3px 14px;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	position: relative;
+	border: 1px solid var(--border);
 }
 
+/* Message rows */
 .chatroom-msg-row {
 	display: flex;
 	align-items: flex-end;
 	gap: 6px;
 	margin-bottom: 3px;
-	/* Virtualization: only paint & layout elements when they're near the viewport. */
 	content-visibility: auto;
 	contain-intrinsic-size: 54px;
 }
 .chatroom-msg-row.own   { justify-content: flex-end; }
 .chatroom-msg-row.other { justify-content: flex-start; }
 
+/* Message entrance animation */
+@keyframes messageSlideIn {
+	from { opacity: 0; transform: translateY(8px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+.chatroom-msg-row {
+	animation: messageSlideIn 0.2s ease both;
+}
+.chatroom-msg-row:nth-child(2) { animation-delay: 0.02s; }
+.chatroom-msg-row:nth-child(3) { animation-delay: 0.04s; }
+.chatroom-msg-row:nth-child(4) { animation-delay: 0.06s; }
+.chatroom-msg-row:nth-child(5) { animation-delay: 0.08s; }
+.chatroom-msg-row:nth-child(6) { animation-delay: 0.1s; }
+
 .chatroom-msg-avatar { cursor: pointer; flex-shrink: 0; }
+
+/* ── Bubble: signature vermilion design ── */
 
 .chatroom-bubble {
 	max-width: 72%;
-	padding: 8px 12px 6px;
-	border-radius: 16px;
+	padding: 10px 14px 8px;
+	border-radius: var(--radius-md);
 	word-break: break-word;
 }
-.chatroom-bubble.own {
-	background: var(--bubble-own);
-	color: var(--text-inverse);
-	border-bottom-right-radius: 4px;
-}
+
+/* Other's bubble — warm paper with a subtle accent left */
 .chatroom-bubble.other {
 	background: var(--bubble-other);
 	color: var(--text-primary);
+	border-left: 3px solid var(--accent-secondary);
+	border-radius: var(--radius-md);
 	border-bottom-left-radius: 4px;
-	box-shadow: var(--shadow-sm);
+}
+
+/* Own bubble — vermilion coral signature */
+.chatroom-bubble.own {
+	background: var(--bubble-own);
+	color: var(--text-inverse);
+	border-radius: var(--radius-md) var(--radius-md) var(--radius-sm) var(--radius-md);
+	box-shadow: 0 2px 8px rgba(201, 80, 79, 0.18);
 }
 
 .chatroom-sender-name {
@@ -198,7 +294,7 @@
 
 .chatroom-bubble-text {
 	font-size: 0.9rem;
-	line-height: 1.45;
+	line-height: 1.5;
 	margin: 0;
 	white-space: pre-wrap;
 }
@@ -211,7 +307,8 @@
 	margin-top: 3px;
 }
 .chatroom-bubble-time {
-	font-size: 0.68rem;
+	font-size: 0.65rem;
+	font-family: var(--font-mono);
 	opacity: 0.6;
 }
 .chatroom-bubble.own .chatroom-bubble-time   { color: var(--text-inverse); }
@@ -219,8 +316,7 @@
 
 .chatroom-tick { opacity: 0.7; }
 
-/* ── ChatRoom actions (vertical dots dropdown) ───────────────────────────── */
-
+/* Actions (vertical dots dropdown) */
 .chatroom-actions-wrap {
 	position: relative;
 	flex-shrink: 0;
@@ -229,7 +325,7 @@
 .chatroom-actions-btn {
 	width: 32px;
 	height: 32px;
-	border-radius: 8px;
+	border-radius: var(--radius-sm);
 	border: none;
 	background: transparent;
 	color: var(--text-muted);
@@ -251,7 +347,7 @@
 	z-index: 200;
 	background: var(--card-bg);
 	border: 1px solid var(--border-strong);
-	border-radius: 12px;
+	border-radius: var(--radius-md);
 	box-shadow: var(--shadow-lg);
 	overflow: hidden;
 	min-width: 170px;
@@ -266,7 +362,7 @@
 	padding: 10px 14px;
 	background: none;
 	border: none;
-	font-family: "DM Sans", sans-serif;
+	font-family: var(--font-body);
 	font-size: 0.85rem;
 	font-weight: 500;
 	color: var(--text-primary);
@@ -293,7 +389,7 @@
 	display: flex;
 	align-items: flex-end;
 	gap: 10px;
-	padding: 0.85rem 1.25rem;
+	padding: 0.8rem 1.25rem;
 	background: var(--card-bg);
 	border-top: 1px solid var(--border);
 	flex-shrink: 0;
@@ -303,25 +399,26 @@
 	flex: 1;
 	resize: none;
 	border: 1.5px solid var(--border);
-	border-radius: 12px;
-	padding: 9px 12px;
-	font-family: "DM Sans", sans-serif;
+	border-radius: var(--radius-md);
+	padding: 10px 14px;
+	font-family: var(--font-body);
 	font-size: 0.9rem;
 	color: var(--text-secondary);
 	background: var(--input-bg);
 	outline: none;
 	max-height: 120px;
 	overflow-y: auto;
-	line-height: 1.45;
-	transition: border-color 0.2s, background 0.2s;
+	line-height: 1.5;
+	transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
-.chatroom-input:focus { border-color: var(--accent); background: var(--card-bg); }
+.chatroom-input:focus { border-color: var(--accent); background: var(--card-bg); box-shadow: 0 0 0 3px rgba(201, 80, 79, 0.1); }
 .chatroom-input::placeholder { color: var(--text-placeholder); }
 
+/* Send button — vermilion signature */
 .chatroom-send-btn {
-	width: 40px;
-	height: 40px;
-	border-radius: 12px;
+	width: 42px;
+	height: 42px;
+	border-radius: var(--radius-md);
 	border: none;
 	background: var(--accent);
 	color: var(--text-inverse);
@@ -330,7 +427,9 @@
 	justify-content: center;
 	cursor: pointer;
 	flex-shrink: 0;
-	transition: background 0.15s;
+	transition: background 0.2s, transform 0.15s;
+	box-shadow: 0 2px 8px rgba(201, 80, 79, 0.25);
 }
-.chatroom-send-btn:hover    { background: var(--accent-hover); }
-.chatroom-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.chatroom-send-btn:hover    { background: var(--accent-hover); transform: scale(1.05); }
+.chatroom-send-btn:active   { transform: scale(0.95); }
+.chatroom-send-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }

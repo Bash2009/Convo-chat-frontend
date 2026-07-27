@@ -19,6 +19,7 @@ export interface ChatStructure {
 	unread: number;
 	isGroup: boolean;
 	avatarUrl: string;
+	admin?: string;
 }
 
 export type Modal = "private" | "group" | null;

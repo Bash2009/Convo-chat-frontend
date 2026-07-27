@@ -8,7 +8,7 @@
   height: 100vh;
   height: 100dvh;
   background: var(--page-bg);
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-body);
 }
 
 .edit-profile-loading {
@@ -41,7 +41,7 @@
   background: none;
   border: none;
   color: var(--accent);
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-body);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -173,7 +173,7 @@
   border: 1.5px solid var(--border-strong);
   background: var(--card-bg);
   color: var(--text-secondary);
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -190,7 +190,7 @@
   border: none;
   background: var(--accent);
   color: var(--text-inverse);
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;

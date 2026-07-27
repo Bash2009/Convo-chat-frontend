@@ -8,25 +8,39 @@ interface AddMemberModalProps {
 	onClose: () => void;
 }
 
+interface UserSearchResponse {
+	userExists: boolean;
+	profile: {
+		firstName: string;
+		lastName: string;
+		username: string;
+		avatarUrl: string;
+		user: { uid: string };
+	};
+}
+
 export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 	const [query, setQuery] = useState("");
 	const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
 	const [foundUser, setFoundUser] = useState<Participant | null>(null);
 	const [selected, setSelected] = useState<Participant[]>([]);
-	const listenerRef = useRef<((data: { userExists: boolean; profile: { user: { uid: string; profile: { firstName: string; lastName: string; username: string; avatarUrl: string } } } }) => void) | null>(null);
+	const listenerRef = useRef<((data: UserSearchResponse) => void) | null>(null);
+	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	// Cleanup socket listener on unmount
+	// Cleanup socket listener + debounce on unmount
 	useEffect(() => {
 		return () => {
 			if (listenerRef.current) {
 				socket.off("userSearch", listenerRef.current);
 				listenerRef.current = null;
 			}
+			if (debounceRef.current) {
+				clearTimeout(debounceRef.current);
+			}
 		};
 	}, []);
 
-	const handleSearch = (value: string) => {
-		setQuery(value);
+	const doSearch = (value: string) => {
 		if (!value.trim()) return;
 
 		// Remove previous listener before adding a new one
@@ -36,14 +50,14 @@ export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 
 		setSearchStatus("loading");
 
-		const handler = (data: { userExists: boolean; profile: { user: { uid: string; profile: { firstName: string; lastName: string; username: string; avatarUrl: string } } } }) => {
+		const handler = (data: UserSearchResponse) => {
 			if (data.userExists) {
 				setFoundUser({
 					uid: data.profile.user.uid,
-					firstName: data.profile.user.profile.firstName,
-					lastName: data.profile.user.profile.lastName,
-					username: data.profile.user.profile.username,
-					avatarUrl: data.profile.user.profile.avatarUrl,
+					firstName: data.profile.firstName,
+					lastName: data.profile.lastName,
+					username: data.profile.username,
+					avatarUrl: data.profile.avatarUrl,
 				});
 				setSearchStatus("found");
 			} else {
@@ -55,6 +69,17 @@ export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 		listenerRef.current = handler;
 		socket.on("userSearch", handler);
 		socket.emit("getUser", { username: value.trim() });
+	};
+
+	const handleSearch = (value: string) => {
+		setQuery(value);
+		if (debounceRef.current) clearTimeout(debounceRef.current);
+		if (!value.trim()) {
+			setSearchStatus("idle");
+			setFoundUser(null);
+			return;
+		}
+		debounceRef.current = setTimeout(() => doSearch(value), 300);
 	};
 
 	const addParticipant = (p: Participant) => {

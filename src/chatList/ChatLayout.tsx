@@ -66,19 +66,9 @@ const ChatLayout = () => {
 					/>
 				) : (
 					<div className="chat-layout-empty">
-						<svg
-							width="48"
-							height="48"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="#d1d5db"
-							strokeWidth="1.5"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						>
-							<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-						</svg>
-						<p>Select a conversation</p>
+						<p className="chat-layout-empty-brand">C</p>
+						<p className="chat-layout-empty-title">No conversation selected</p>
+						<p className="chat-layout-empty-sub">Pick a conversation or start something new</p>
 					</div>
 				)}
 			</div>

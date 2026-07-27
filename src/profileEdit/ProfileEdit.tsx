@@ -16,7 +16,7 @@ const DEFAULT_AVATARS = [
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
-  const { showError } = useErrorModal();
+  const { showError, showToast } = useErrorModal();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
@@ -80,6 +80,7 @@ const ProfileEdit = () => {
       else if (avatarPreview) formData.append("avatarUrl", avatarPreview);
 
       await api.patch(`/profile/update/${auth.currentUser?.uid}`, formData);
+      showToast("Profile updated!");
       navigate("/chats");
     } catch (err: unknown) {
       showError(`Could not update profile. ${getFriendlyErrorMessage(err)}`);
@@ -117,8 +118,8 @@ const ProfileEdit = () => {
               <img src={avatarPreview} alt="avatar" />
             ) : (
               <svg viewBox="0 0 40 40" fill="none">
-                <circle cx="20" cy="16" r="7" stroke="#191970" strokeWidth="1.8" />
-                <path d="M6 36c0-7.73 6.27-14 14-14s14 6.27 14 14" stroke="#191970" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="20" cy="16" r="7" stroke="currentColor" strokeWidth="1.8" />
+                <path d="M6 36c0-7.73 6.27-14 14-14s14 6.27 14 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
             )}
             <div className="edit-avatar-overlay">

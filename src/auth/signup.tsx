@@ -11,10 +11,11 @@ interface SignUpProps {
 
 const SignUp = ({ handleChange }: SignUpProps) => {
 	const navigate = useNavigate();
-	const { showError } = useErrorModal();
+	const { showError, showToast } = useErrorModal();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
+	const [submitting, setSubmitting] = useState(false);
 	const [errors, setErrors] = useState<{
 		email?: string;
 		password?: string;
@@ -60,12 +61,15 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 		setErrors(validationErrors);
 		if (Object.keys(validationErrors).length > 0) return;
 
+		setSubmitting(true);
+
 		const userCredentials = await createUserWithEmailAndPassword(
 			auth,
 			email,
 			password
 		).catch((error) => {
 			showError(getFriendlyErrorMessage(error));
+			setSubmitting(false);
 		});
 
 		const user = userCredentials?.user;
@@ -76,15 +80,14 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 					uid: user.uid,
 				});
 				setTokens(data.access_token, data.refresh_token);
+				showToast("Account created!");
 				navigate("/verify-email");
 			} catch (err) {
 				showError(getFriendlyErrorMessage(err));
 				await signOut(auth);
+				setSubmitting(false);
 			}
 		}
-		// await sendEmailVerification(user!).catch((error) => {
-		// 	console.log(`Error ${error.code}: ${error.message}`);
-		// });
 	};
 
 	return (
@@ -106,6 +109,7 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
 						onBlur={() => handleBlur("email")}
+						disabled={submitting}
 					/>
 					<label htmlFor="sign_email">Email</label>
 					{errors.email && (
@@ -128,6 +132,7 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 						onBlur={() => handleBlur("password")}
+						disabled={submitting}
 					/>
 					<label htmlFor="sign_pass">Password</label>
 					{errors.password && (
@@ -152,6 +157,7 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 						value={confirmPassword}
 						onChange={(e) => setConfirmPassword(e.target.value)}
 						onBlur={() => handleBlur("confirm")}
+						disabled={submitting}
 					/>
 					<label htmlFor="con_pass">Confirm password</label>
 					{errors.confirm && (
@@ -159,8 +165,15 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 					)}
 				</div>
 
-				<button type="submit" className="btn btn-navy mb-3">
-					Create account
+					<button type="submit" className="btn btn-navy mb-3" disabled={submitting}>
+					{submitting ? (
+						<span className="btn-loading-text">
+							<div className="spinner spinner--small" style={{ borderTopColor: "white", borderColor: "rgba(255,255,255,0.3)" }} />
+							Creating…
+						</span>
+					) : (
+						"Create account"
+					)}
 				</button>
 
 				<p className="switch-text text-center mb-0">

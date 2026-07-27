@@ -65,13 +65,13 @@ const VerifyEmail = () => {
 					<rect width="48" height="48" rx="12" fill="#eceff1" />
 					<path
 						d="M10 16C10 14.9 10.9 14 12 14H36C37.1 14 38 14.9 38 16V32C38 33.1 37.1 34 36 34H12C10.9 34 10 33.1 10 32V16Z"
-						stroke="#191970"
+						stroke="currentColor"
 						strokeWidth="2"
 						fill="none"
 					/>
 					<path
 						d="M10 16L24 26L38 16"
-						stroke="#191970"
+						stroke="currentColor"
 						strokeWidth="2"
 						strokeLinecap="round"
 					/>

@@ -35,7 +35,7 @@ const ChatList = forwardRef(function ChatList(
 	ref,
 ) {
 	const navigate = useNavigate();
-	const { showError } = useErrorModal();
+	const { showError, showToast } = useErrorModal();
 	const [chats, setChats]           = useState<ChatStructure[]>([]);
 	const [search, setSearch]         = useState("");
 	const [loading, setLoading]       = useState(true);
@@ -79,6 +79,7 @@ const ChatList = forwardRef(function ChatList(
 		if (!undoChat) return;
 		// Actually emit the delete event now
 		socket.emit("deleteChat", { chatId: undoChat.chat.id });
+		showToast(`"${undoChat.chatName}" deleted.`);
 		setUndoChat(null);
 	};
 
@@ -200,6 +201,23 @@ const ChatList = forwardRef(function ChatList(
 			);
 		});
 
+		socket.on("memberRemoved", (updatedChat: ChatStructure) => {
+			const currentUid = auth.currentUser?.uid;
+			const isRemoved = currentUid && !updatedChat.participants.some(
+				(p) => p.user.uid === currentUid,
+			);
+			if (isRemoved) {
+				setChats((prev) => prev.filter((c) => c.id !== updatedChat.id));
+				showToast(`You were removed from "${updatedChat.name}" by the admin.`);
+			} else {
+				setChats((prev) =>
+					sortChatsByRecent(
+						prev.map((c) => (c.id === updatedChat.id ? updatedChat : c)),
+					),
+				);
+			}
+		});
+
 		socket.on("userSearch", (data) => {
 			if (data.userExists) {
 				setFoundUser({ ...data.profile, uid: data.profile.user.uid });
@@ -311,6 +329,7 @@ const ChatList = forwardRef(function ChatList(
 			socket.off("chatCreated");
 			socket.off("chatDeleted");
 			socket.off("memberAdded");
+			socket.off("memberRemoved");
 			socket.off("userSearch");
 			socket.off("newMessage");
 			socket.off("error");
@@ -347,6 +366,14 @@ const ChatList = forwardRef(function ChatList(
 	};
 
 	const handlePrivateChat = (uid: string) => {
+		const existing = chats.find(
+			(c) => !c.isGroup && c.participants.some((p) => p.user.uid === uid),
+		);
+		if (existing) {
+			handleSelectChat(existing.id);
+			setModal(null);
+			return;
+		}
 		socket.emit("createChat", { members: [auth.currentUser?.uid, uid] });
 		setModal(null);
 	};
@@ -424,24 +451,11 @@ const ChatList = forwardRef(function ChatList(
 
 			<div className="chatlist-root">
 				<div className="chatlist-header">
-					<h1 className="chatlist-title">Messages</h1>
+					<div className="chatlist-brand">
+						<h1 className="chatlist-title">Convo</h1>
+						<p className="chatlist-subtitle">Messages</p>
+					</div>
 					<div className="chatlist-header-actions">
-						<div className="chatlist-dropdown-wrap" ref={dropdownRef}>
-							<button
-								className="chatlist-icon-btn"
-								title="New chat"
-								onClick={() => setDropdown((v) => !v)}
-							>
-								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-									<line x1="12" y1="5" x2="12" y2="19" />
-									<line x1="5" y1="12" x2="19" y2="12" />
-								</svg>
-							</button>
-							{dropdown && (
-								<ChatTypeDropdown setDropdown={setDropdown} setModal={setModal} />
-							)}
-						</div>
-
 						<button
 							className="chatlist-icon-btn"
 							title="Edit profile"
@@ -472,7 +486,7 @@ const ChatList = forwardRef(function ChatList(
 							<button
 								className="chatlist-icon-btn"
 								title="Notifications enabled"
-								style={{ color: "var(--accent, #191970)" }}
+								style={{ color: "var(--accent)" }}
 							>
 								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 									<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -525,7 +539,11 @@ const ChatList = forwardRef(function ChatList(
 				</div>
 
 				<div className="chatlist-items">
-					{loading && <p className="chatlist-status">Loading…</p>}
+					{loading && (
+						<div className="chatlist-status">
+							<div className="spinner" />
+						</div>
+					)}
 					{error && <p className="chatlist-status error">{error}</p>}
 					{!loading && !error && filtered.length === 0 && (
 						<p className="chatlist-status">No conversations found.</p>
@@ -568,6 +586,23 @@ const ChatList = forwardRef(function ChatList(
 							/>
 						);
 					})}
+				</div>
+
+				{/* FAB — bottom-right, dropdown opens upward */}
+				<div className="chatlist-fab-wrap" ref={dropdownRef}>
+					{dropdown && (
+						<ChatTypeDropdown setDropdown={setDropdown} setModal={setModal} />
+					)}
+					<button
+						className="chatlist-fab"
+						title="New chat"
+						onClick={() => setDropdown((v) => !v)}
+					>
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+							<line x1="12" y1="5" x2="12" y2="19" />
+							<line x1="5" y1="12" x2="19" y2="12" />
+						</svg>
+					</button>
 				</div>
 
 				{/* Undo toast */}

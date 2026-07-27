@@ -6,8 +6,8 @@ const StepWelcome = () => (
 
     <svg className="setup-welcome-icon" viewBox="0 0 64 64" fill="none">
       <circle cx="32" cy="32" r="32" fill="#eceff1" />
-      <circle cx="32" cy="26" r="9" stroke="#191970" strokeWidth="2.2" fill="none" />
-      <path d="M14 50c0-9.94 8.06-18 18-18s18 8.06 18 18" stroke="#191970" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+      <circle cx="32" cy="26" r="9" stroke="currentColor" strokeWidth="2.2" fill="none" />
+      <path d="M14 50c0-9.94 8.06-18 18-18s18 8.06 18 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" fill="none" />
     </svg>
 
     <h2 className="setup-title">Set up your profile</h2>

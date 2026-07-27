@@ -11,9 +11,10 @@ interface LoginProps {
 
 const Login = ({ handleChange }: LoginProps) => {
 	const navigate = useNavigate();
-	const { showError } = useErrorModal();
+	const { showError, showToast } = useErrorModal();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [submitting, setSubmitting] = useState(false);
 	const [errors, setErrors] = useState<{ email?: string; password?: string }>(
 		{}
 	);
@@ -47,44 +48,45 @@ const Login = ({ handleChange }: LoginProps) => {
 		setErrors(validationErrors);
 		if (Object.keys(validationErrors).length > 0) return;
 
+		setSubmitting(true);
+
 		const userCredentials = await signInWithEmailAndPassword(
 			auth,
 			email,
 			password
 		).catch((error) => {
 			showError(getFriendlyErrorMessage(error));
+			setSubmitting(false);
 		});
 
 		const user = userCredentials?.user;
 		if (user) {
 			if (!user.emailVerified) {
+				setSubmitting(false);
 				navigate(`/verify-email`);
 				return;
 			}
-			await api
-				.post("/auth/login", {
+			try {
+				const { data } = await api.post("/auth/login", {
 					uid: user.uid,
-				})
-				.then(({ data }) => {
-					setTokens(data.access_token, data.refresh_token);
-					checkProfile(user.uid);
-				})
-				.catch((err) => {
-					console.log(err);
-					signOut(auth);
 				});
+				setTokens(data.access_token, data.refresh_token);
+				showToast("Welcome back!");
+				await checkProfile(user.uid);
+			} catch {
+				await signOut(auth);
+				setSubmitting(false);
+			}
 		}
 	};
 
 	const checkProfile = async (uid: string) => {
-		await api
-			.get(`/profile/id/${uid}`)
-			.then(() => {
-				navigate("/chats");
-			})
-			.catch(() => {
-				navigate("/profile-setup");
-			});
+		try {
+			await api.get(`/profile/id/${uid}`);
+			navigate("/chats");
+		} catch {
+			navigate("/profile-setup");
+		}
 	};
 
 	return (
@@ -106,6 +108,7 @@ const Login = ({ handleChange }: LoginProps) => {
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
 						onBlur={() => handleBlur("email")}
+						disabled={submitting}
 					/>
 					<label htmlFor="log_email">Email</label>
 					{errors.email && (
@@ -128,6 +131,7 @@ const Login = ({ handleChange }: LoginProps) => {
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 						onBlur={() => handleBlur("password")}
+						disabled={submitting}
 					/>
 					<label htmlFor="log_pass">Password</label>
 					{errors.password && (
@@ -137,8 +141,15 @@ const Login = ({ handleChange }: LoginProps) => {
 					)}
 				</div>
 
-				<button type="submit" className="btn btn-navy mb-3">
-					Log in
+					<button type="submit" className="btn btn-navy mb-3" disabled={submitting}>
+					{submitting ? (
+						<span className="btn-loading-text">
+							<div className="spinner spinner--small" style={{ borderTopColor: "white", borderColor: "rgba(255,255,255,0.3)" }} />
+							Signing in…
+						</span>
+					) : (
+						"Log in"
+					)}
 				</button>
 
 				<p className="switch-text text-center mb-0">
