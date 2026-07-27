@@ -11,7 +11,7 @@ interface LoginProps {
 
 const Login = ({ handleChange }: LoginProps) => {
 	const navigate = useNavigate();
-	const { showError } = useErrorModal();
+	const { showError, showToast } = useErrorModal();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [submitting, setSubmitting] = useState(false);
@@ -71,6 +71,7 @@ const Login = ({ handleChange }: LoginProps) => {
 					uid: user.uid,
 				});
 				setTokens(data.access_token, data.refresh_token);
+				showToast("Welcome back!");
 				await checkProfile(user.uid);
 			} catch {
 				await signOut(auth);

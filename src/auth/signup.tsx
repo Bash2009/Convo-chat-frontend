@@ -11,7 +11,7 @@ interface SignUpProps {
 
 const SignUp = ({ handleChange }: SignUpProps) => {
 	const navigate = useNavigate();
-	const { showError } = useErrorModal();
+	const { showError, showToast } = useErrorModal();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
@@ -80,6 +80,7 @@ const SignUp = ({ handleChange }: SignUpProps) => {
 					uid: user.uid,
 				});
 				setTokens(data.access_token, data.refresh_token);
+				showToast("Account created!");
 				navigate("/verify-email");
 			} catch (err) {
 				showError(getFriendlyErrorMessage(err));

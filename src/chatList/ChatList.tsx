@@ -79,6 +79,7 @@ const ChatList = forwardRef(function ChatList(
 		if (!undoChat) return;
 		// Actually emit the delete event now
 		socket.emit("deleteChat", { chatId: undoChat.chat.id });
+		showToast(`"${undoChat.chatName}" deleted.`);
 		setUndoChat(null);
 	};
 
@@ -207,7 +208,7 @@ const ChatList = forwardRef(function ChatList(
 			);
 			if (isRemoved) {
 				setChats((prev) => prev.filter((c) => c.id !== updatedChat.id));
-				showToast("You were removed from the group by the admin.");
+				showToast(`You were removed from "${updatedChat.name}" by the admin.`);
 			} else {
 				setChats((prev) =>
 					sortChatsByRecent(

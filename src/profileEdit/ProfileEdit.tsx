@@ -16,7 +16,7 @@ const DEFAULT_AVATARS = [
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
-  const { showError } = useErrorModal();
+  const { showError, showToast } = useErrorModal();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
@@ -80,6 +80,7 @@ const ProfileEdit = () => {
       else if (avatarPreview) formData.append("avatarUrl", avatarPreview);
 
       await api.patch(`/profile/update/${auth.currentUser?.uid}`, formData);
+      showToast("Profile updated!");
       navigate("/chats");
     } catch (err: unknown) {
       showError(`Could not update profile. ${getFriendlyErrorMessage(err)}`);

@@ -8,6 +8,7 @@ import type { ChatStructure } from "./constants";
 import { AddMemberModal } from "./components/AddMemberModal";
 import { GroupInfoPanel } from "./components/GroupInfoPanel";
 import { ConfirmModal } from "./components/ConfirmModal";
+import { useErrorModal } from "../ErrorModal";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,7 @@ const formatDayLabel = (iso: string) => {
 const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, onlineUids }: Props) => {
 	const navigate   = useNavigate();
 	const currentUid = auth.currentUser?.uid ?? "";
+	const { showToast } = useErrorModal();
 
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput]       = useState("");
@@ -225,8 +227,10 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, on
 	const handleConfirmDelete = () => {
 		if (chat.isGroup && !isGroupAdmin) {
 			socket.emit("leaveGroup", { chatId: chat.id });
+			showToast(`You left "${headerName}".`);
 		} else {
 			socket.emit("deleteChat", { chatId: chat.id });
+			showToast(`"${headerName}" ${chat.isGroup ? "group deleted" : "deleted"}.`);
 		}
 		setShowConfirmDelete(false);
 	};
