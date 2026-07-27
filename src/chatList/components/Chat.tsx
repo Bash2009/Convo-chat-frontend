@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Avatar } from "./Avatar";
 import type { ChatStructure } from "../constants";
 
@@ -24,6 +25,7 @@ const Chat = ({
 	p,
 	avatarUrl,
 	isGroup,
+	isOnline,
 }: {
 	chat: ChatStructure;
 	activeChatId: string;
@@ -33,23 +35,34 @@ const Chat = ({
 	p: { firstName: string; lastName: string; username: string; avatarUrl: string; online?: boolean } | undefined;
 	avatarUrl?: string;
 	isGroup: boolean;
+	isOnline?: boolean;
 }) => {
 
-	// The entire row is clickable — including the avatar area.
-	// Avatar's onClick is removed so stopPropagation never swallows the row click.
-	// Profile navigation is handled elsewhere (e.g. the ChatRoom header).
+	const navigate = useNavigate();
+
+	const handleAvatarClick = (e: React.MouseEvent) => {
+		// For private chats, clicking the avatar navigates to the user's profile.
+		// Stop propagation so it doesn't also trigger the row's onSelectChat.
+		if (!isGroup && p?.username) {
+			e.stopPropagation();
+			navigate(`/profile/${p.username}`);
+		}
+		// For group chats, let the click fall through to open the chat as normal.
+	};
+
 	return (
 		<div
 			className={`chatlist-item ${activeChatId === chat.id ? "active" : ""}`}
 			style={{ animationDelay: `${i * 40}ms` }}
 			onClick={() => onSelectChat(chat.id)}
 		>
-			<Avatar
-				name={fullName}
-				avatarUrl={avatarUrl}
-				online={!isGroup && !!p?.online}
-				// No onClick here — let the click bubble up to the row handler
-			/>
+			<div className="chatlist-avatar-wrap" onClick={handleAvatarClick}>
+				<Avatar
+					name={fullName}
+					avatarUrl={avatarUrl}
+					online={!!isOnline}
+				/>
+			</div>
 			<div className="chatlist-item-body">
 				<div className="chatlist-item-row">
 					<span className="chatlist-item-name">{fullName}</span>

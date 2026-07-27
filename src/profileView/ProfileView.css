@@ -1,0 +1,147 @@
+.profile-view-root {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 100vh;
+	min-height: 100dvh;
+	padding: 1.5rem;
+	background: var(--page-bg);
+	font-family: "DM Sans", sans-serif;
+}
+
+.profile-view-card {
+	width: 100%;
+	max-width: 460px;
+	background: var(--card-bg);
+	border-radius: 20px;
+	box-shadow: var(--shadow-md);
+	overflow: hidden;
+	animation: profileViewFadeIn 0.2s ease;
+}
+
+@keyframes profileViewFadeIn {
+	from { opacity: 0; transform: translateY(8px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.profile-view-header {
+	display: flex;
+	align-items: center;
+	padding: 0.85rem 1.25rem;
+	border-bottom: 1px solid var(--border);
+}
+
+.profile-view-back {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	background: none;
+	border: none;
+	color: var(--accent);
+	font-family: "DM Sans", sans-serif;
+	font-size: 0.88rem;
+	font-weight: 500;
+	cursor: pointer;
+	padding: 6px 10px;
+	border-radius: 8px;
+	transition: background 0.12s;
+}
+.profile-view-back:hover {
+	background: var(--hover-bg);
+}
+
+/* Body */
+.profile-view-body {
+	padding: 2rem 1.5rem 2.5rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.profile-view-loading {
+	color: var(--text-placeholder);
+	font-size: 0.9rem;
+	margin: 0;
+	padding: 2rem 0;
+}
+
+/* Avatar */
+.profile-view-avatar-section {
+	margin-bottom: 1rem;
+}
+
+.profile-view-avatar-section .avatar {
+	border: 3px solid var(--accent-light);
+}
+
+/* Name */
+.profile-view-name {
+	font-size: 1.35rem;
+	font-weight: 700;
+	color: var(--text-primary);
+	margin: 0 0 4px;
+	text-align: center;
+}
+
+/* Username */
+.profile-view-username {
+	font-size: 0.9rem;
+	color: var(--text-muted);
+	margin: 0 0 1.25rem;
+	text-align: center;
+}
+
+/* Divider */
+.profile-view-divider {
+	width: 100%;
+	height: 1px;
+	background: var(--border);
+	margin-bottom: 1.25rem;
+}
+
+/* Fields */
+.profile-view-field {
+	width: 100%;
+	margin-bottom: 1rem;
+}
+
+.profile-view-field-label {
+	display: block;
+	font-size: 0.72rem;
+	font-weight: 600;
+	color: var(--text-placeholder);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin-bottom: 4px;
+}
+
+.profile-view-field-value {
+	font-size: 0.9rem;
+	color: var(--text-secondary);
+	margin: 0;
+	line-height: 1.5;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* Empty state */
+.profile-view-empty {
+	color: var(--text-placeholder);
+	font-size: 0.88rem;
+	margin: 0;
+	padding: 1rem 0;
+}
+
+/* Not found */
+.profile-view-not-found-icon {
+	margin-bottom: 1rem;
+}
+
+.profile-view-not-found-text {
+	color: var(--text-muted);
+	font-size: 0.95rem;
+	margin: 0;
+	text-align: center;
+}

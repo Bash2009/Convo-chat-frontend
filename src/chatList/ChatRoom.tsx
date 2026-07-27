@@ -5,6 +5,7 @@ import { Avatar } from "./components/Avatar";
 import { auth } from "../firebase";
 import type { ChatStructure } from "./constants";
 import { AddMemberModal } from "./components/AddMemberModal";
+import { GroupInfoPanel } from "./components/GroupInfoPanel";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -20,7 +21,9 @@ interface Props {
 	chat: ChatStructure;
 	onBack: () => void;
 	onPreviewUpdate?: (chatId: string, text: string, sentAt: string) => void;
+	onChatRead?: (chatId: string) => void;
 	onChatDeleted?: (chatId: string) => void;
+	onlineUids?: Set<string>;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -94,7 +97,7 @@ const StatusTick = ({ status }: { status: Message["status"] }) => {
 // This component does NOT own the socket connection — ChatList does.
 // ChatRoom only emits joinChat / leaveChat and listens for room-scoped events.
 
-const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
+const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, onlineUids }: Props) => {
 	const navigate   = useNavigate();
 	const currentUid = auth.currentUser?.uid ?? "";
 
@@ -104,6 +107,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 	const [hasMore, setHasMore]   = useState(true);
 	const [showActions, setShowActions] = useState(false);
 	const [showAddMember, setShowAddMember] = useState(false);
+	const [showGroupInfo, setShowGroupInfo] = useState(false);
 	const actionsRef = useRef<HTMLDivElement>(null);
 	const messagesRef = useRef<HTMLDivElement>(null);
 	const bottomRef = useRef<HTMLDivElement>(null);
@@ -123,6 +127,10 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 	const headerAvatar = chat.isGroup
 		? chat.avatarUrl
 		: otherParticipant?.profile.avatarUrl ?? "";
+
+	const otherIsOnline = !chat.isGroup && otherParticipant
+		? (onlineUids?.has(otherParticipant.uid) ?? false)
+		: false;
 
 	// ── Socket events (room-scoped only) ──────────────────────────────────────
 
@@ -184,8 +192,13 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		};
 		socket.on("chatDeleted", onChatDeletedHandler);
 
-		// Mark existing messages as read when the room opens
-		socket.emit("markRead", { chatId: chat.id, uid: currentUid });
+		// Mark existing messages as read when the room opens.
+		// The ack callback tells the server to persist the updated unread count.
+		// If the server doesn't support acks, the frontend already reset unread
+		// locally when the user clicked the chat, so this is a best-effort sync.
+		socket.emit("markRead", { chatId: chat.id, uid: currentUid }, () => {
+			onChatRead?.(chat.id);
+		});
 
 		return () => {
 			socket.emit("leaveChat", { chatId: chat.id });
@@ -281,17 +294,27 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 					<Avatar
 						name={headerName}
 						avatarUrl={headerAvatar}
-						online={false}
+						online={otherIsOnline}
 						size={36}
 					/>
 				</div>
 
-				<div className="chatroom-header-info">
+				<div
+					className="chatroom-header-info"
+					onClick={() => {
+						if (chat.isGroup) {
+							setShowGroupInfo(true);
+						} else if (otherParticipant?.profile.username) {
+							navigate(`/profile/${otherParticipant.profile.username}`);
+						}
+					}}
+					style={{ cursor: "pointer" }}
+				>
 					<p className="chatroom-header-name">{headerName}</p>
 					<p className="chatroom-header-sub">
 						{chat.isGroup
-							? `${chat.participants.length} members`
-							: "Tap avatar to view profile"}
+							? `${chat.participants.length} ${chat.participants.length === 1 ? "member" : "members"}`
+							: "Tap here to view profile"}
 					</p>
 				</div>
 
@@ -351,6 +374,15 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 				<AddMemberModal
 					chatId={chat.id}
 					onClose={() => setShowAddMember(false)}
+				/>
+			)}
+
+			{/* Group info panel */}
+			{showGroupInfo && chat.isGroup && (
+				<GroupInfoPanel
+					chat={chat}
+					onClose={() => setShowGroupInfo(false)}
+					onlineUids={onlineUids}
 				/>
 			)}
 

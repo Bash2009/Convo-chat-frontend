@@ -4,7 +4,7 @@
 	height: 100vh;
 	height: 100dvh;
 	overflow: hidden;
-	background: #f8f9fa;
+	background: var(--page-bg);
 }
 
 /* Sidebar */
@@ -12,8 +12,8 @@
 	flex-shrink: 0;
 	width: 360px;
 	height: 100%;
-	border-right: 1px solid #eceff1;
-	background: #fff;
+	border-right: 1px solid var(--border);
+	background: var(--card-bg);
 }
 
 /* Room panel — hidden until a chat is selected */
@@ -21,7 +21,6 @@
 	flex: 1;
 	display: flex;
 	min-width: 0;
-	/* Desktop: fade/slide in when .visible is added */
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 0.18s ease;
@@ -39,7 +38,7 @@
 	align-items: center;
 	justify-content: center;
 	gap: 12px;
-	color: #9ca3af;
+	color: var(--text-placeholder);
 	font-family: "DM Sans", sans-serif;
 	font-size: 0.9rem;
 }
@@ -51,7 +50,7 @@
 		position: absolute;
 		inset: 0;
 		z-index: 10;
-		background: #fff;
+		background: var(--card-bg);
 		transition: transform 0.25s ease;
 	}
 	.chat-layout-sidebar.has-active {
@@ -78,7 +77,7 @@
 	flex-direction: column;
 	flex: 1;
 	height: 100%;
-	background: #f8f9fa;
+	background: var(--page-bg);
 	font-family: "DM Sans", sans-serif;
 	min-width: 0;
 }
@@ -86,7 +85,7 @@
 .chatroom-loading,
 .chatroom-empty {
 	margin: auto;
-	color: #9ca3af;
+	color: var(--text-placeholder);
 	font-size: 0.88rem;
 	text-align: center;
 }
@@ -97,8 +96,8 @@
 	align-items: center;
 	gap: 10px;
 	padding: 0.85rem 1.25rem;
-	background: #fff;
-	border-bottom: 1px solid #eceff1;
+	background: var(--card-bg);
+	border-bottom: 1px solid var(--border);
 	flex-shrink: 0;
 }
 
@@ -106,7 +105,7 @@
 	display: none;
 	background: none;
 	border: none;
-	color: var(--navy);
+	color: var(--accent);
 	cursor: pointer;
 	padding: 4px;
 }
@@ -120,7 +119,7 @@
 .chatroom-header-name {
 	font-weight: 600;
 	font-size: 0.95rem;
-	color: var(--navy);
+	color: var(--accent);
 	margin: 0;
 	white-space: nowrap;
 	overflow: hidden;
@@ -128,7 +127,7 @@
 }
 .chatroom-header-sub {
 	font-size: 0.75rem;
-	color: #9ca3af;
+	color: var(--text-placeholder);
 	margin: 0;
 }
 
@@ -150,8 +149,8 @@
 	margin: 0.75rem 0 0.5rem;
 }
 .chatroom-day-label span {
-	background: #eceff1;
-	color: #6b7280;
+	background: var(--border);
+	color: var(--text-muted);
 	font-size: 0.75rem;
 	font-weight: 500;
 	border-radius: 20px;
@@ -163,9 +162,7 @@
 	align-items: flex-end;
 	gap: 6px;
 	margin-bottom: 3px;
-	/* Virtualization: only paint & layout elements when they're near the viewport.
-	   content-visibility: auto skips rendering for off-screen rows and gives the
-	   browser a contain-intrinsic-size hint so scrollbar height stays correct. */
+	/* Virtualization: only paint & layout elements when they're near the viewport. */
 	content-visibility: auto;
 	contain-intrinsic-size: 54px;
 }
@@ -181,21 +178,21 @@
 	word-break: break-word;
 }
 .chatroom-bubble.own {
-	background: var(--navy);
-	color: #fff;
+	background: var(--bubble-own);
+	color: var(--text-inverse);
 	border-bottom-right-radius: 4px;
 }
 .chatroom-bubble.other {
-	background: #fff;
-	color: #111827;
+	background: var(--bubble-other);
+	color: var(--text-primary);
 	border-bottom-left-radius: 4px;
-	box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+	box-shadow: var(--shadow-sm);
 }
 
 .chatroom-sender-name {
 	font-size: 0.72rem;
 	font-weight: 600;
-	color: var(--navy);
+	color: var(--accent);
 	margin: 0 0 3px;
 }
 
@@ -217,8 +214,8 @@
 	font-size: 0.68rem;
 	opacity: 0.6;
 }
-.chatroom-bubble.own .chatroom-bubble-time   { color: #fff; }
-.chatroom-bubble.other .chatroom-bubble-time { color: #6b7280; }
+.chatroom-bubble.own .chatroom-bubble-time   { color: var(--text-inverse); }
+.chatroom-bubble.other .chatroom-bubble-time { color: var(--text-muted); }
 
 .chatroom-tick { opacity: 0.7; }
 
@@ -235,7 +232,7 @@
 	border-radius: 8px;
 	border: none;
 	background: transparent;
-	color: #6b7280;
+	color: var(--text-muted);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -243,8 +240,8 @@
 	transition: background 0.12s;
 }
 .chatroom-actions-btn:hover {
-	background: #f3f4f6;
-	color: #374151;
+	background: var(--hover-bg);
+	color: var(--text-secondary);
 }
 
 .chatroom-actions-menu {
@@ -252,10 +249,10 @@
 	top: calc(100% + 6px);
 	right: 0;
 	z-index: 200;
-	background: #fff;
-	border: 1px solid #e5e7eb;
+	background: var(--card-bg);
+	border: 1px solid var(--border-strong);
 	border-radius: 12px;
-	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+	box-shadow: var(--shadow-lg);
 	overflow: hidden;
 	min-width: 170px;
 	animation: dropdownFadeIn 0.12s ease;
@@ -272,19 +269,19 @@
 	font-family: "DM Sans", sans-serif;
 	font-size: 0.85rem;
 	font-weight: 500;
-	color: #111827;
+	color: var(--text-primary);
 	cursor: pointer;
 	text-align: left;
 	transition: background 0.12s;
 }
 .chatroom-actions-item:hover {
-	background: #f3f4f6;
+	background: var(--hover-bg);
 }
 .chatroom-actions-item.danger {
-	color: #ef4444;
+	color: var(--danger);
 }
 .chatroom-actions-item.danger:hover {
-	background: #fef2f2;
+	background: var(--danger-bg);
 }
 .chatroom-actions-item svg {
 	flex-shrink: 0;
@@ -297,37 +294,37 @@
 	align-items: flex-end;
 	gap: 10px;
 	padding: 0.85rem 1.25rem;
-	background: #fff;
-	border-top: 1px solid #eceff1;
+	background: var(--card-bg);
+	border-top: 1px solid var(--border);
 	flex-shrink: 0;
 }
 
 .chatroom-input {
 	flex: 1;
 	resize: none;
-	border: 1.5px solid #eceff1;
+	border: 1.5px solid var(--border);
 	border-radius: 12px;
 	padding: 9px 12px;
 	font-family: "DM Sans", sans-serif;
 	font-size: 0.9rem;
-	color: #374151;
-	background: #f8f9fa;
+	color: var(--text-secondary);
+	background: var(--input-bg);
 	outline: none;
 	max-height: 120px;
 	overflow-y: auto;
 	line-height: 1.45;
 	transition: border-color 0.2s, background 0.2s;
 }
-.chatroom-input:focus { border-color: var(--navy); background: #fff; }
-.chatroom-input::placeholder { color: #9ca3af; }
+.chatroom-input:focus { border-color: var(--accent); background: var(--card-bg); }
+.chatroom-input::placeholder { color: var(--text-placeholder); }
 
 .chatroom-send-btn {
 	width: 40px;
 	height: 40px;
 	border-radius: 12px;
 	border: none;
-	background: var(--navy);
-	color: #fff;
+	background: var(--accent);
+	color: var(--text-inverse);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -335,5 +332,5 @@
 	flex-shrink: 0;
 	transition: background 0.15s;
 }
-.chatroom-send-btn:hover    { background: var(--navy-hover, #0f1b6b); }
+.chatroom-send-btn:hover    { background: var(--accent-hover); }
 .chatroom-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }

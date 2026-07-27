@@ -6,6 +6,7 @@ import { NewGroupModal } from "./components/NewGroupModal";
 import "./ChatList.css";
 import ChatTypeDropdown from "./components/ChatTypeDropdown";
 import Chat from "./components/Chat";
+import { ThemeToggle } from "../components/ThemeToggle";
 import type { ChatStructure, Modal, Participant, UserStatus } from "./constants";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
@@ -33,7 +34,7 @@ const ChatList = forwardRef(function ChatList(
 	const [foundUser, setFoundUser]   = useState<Participant>();
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
-	// Expose updateChatPreview so ChatRoom can update the list when new messages arrive
+	// Expose updateChatPreview so ChatRoom can sync the list preview + reset unread when opened
 	useImperativeHandle(ref, () => ({
 		updateChatPreview(chatId: string, text: string, sentAt: string) {
 			setChats((prev) =>
@@ -44,7 +45,27 @@ const ChatList = forwardRef(function ChatList(
 				),
 			);
 		},
+		resetUnread(chatId: string) {
+			setChats((prev) =>
+				prev.map((c) =>
+					c.id === chatId ? { ...c, unread: 0 } : c,
+				),
+			);
+		},
+		getOnlineUids: () => onlineUids,
 	}));
+
+	// Keep a ref in sync with the current activeChatId so the socket-effect
+	// closure (which only mounts once) always reads the latest value.
+	const activeChatIdRef = useRef(activeChatId);
+	activeChatIdRef.current = activeChatId;
+
+	// ── Online status tracking ─────────────────────────────────────────────────
+	// This ref holds a Set of currently-online user UIDs. It's updated via socket
+	// events and exposed to parent components through the imperative handle so that
+	// ChatRoom and GroupInfoPanel can show live status dots.
+
+	const [onlineUids, setOnlineUids] = useState<Set<string>>(new Set());
 
 	// ── Socket lifecycle ──────────────────────────────────────────────────────
 	// ChatList owns the single shared socket. ChatRoom never calls connect/disconnect.
@@ -95,12 +116,22 @@ const ChatList = forwardRef(function ChatList(
 			}
 		});
 
-		// Keep chat list preview fresh when any room receives a new message
+		// Keep chat list preview fresh when any room receives a new message.
+		// If the user isn't viewing that chat, also bump the unread counter.
 		socket.on("newMessage", (msg: { chatId: string; text: string; sentAt: string }) => {
 			setChats((prev) =>
 				prev.map((c) =>
 					c.id === msg.chatId
-						? { ...c, lastMessage: msg.text, lastMessageAt: msg.sentAt }
+						? {
+								...c,
+								lastMessage: msg.text,
+								lastMessageAt: msg.sentAt,
+								// Only bump unread for chats the user isn't currently viewing
+								unread:
+									msg.chatId === activeChatIdRef.current
+										? c.unread
+										: c.unread + 1,
+						  }
 						: c,
 				),
 			);
@@ -109,6 +140,28 @@ const ChatList = forwardRef(function ChatList(
 		// Surface server-side socket errors to the user
 		socket.on("error", (err: { event: string; message: string }) => {
 			showError(err.message || `Something went wrong while processing "${err.event}".`);
+		});
+
+		// Sync unread counts pushed from the server (e.g., after markRead on
+		// another device, or when the server resets unread for this user).
+		socket.on("unreadUpdated", ({ chatId, unread }: { chatId: string; unread: number }) => {
+			setChats((prev) =>
+				prev.map((c) =>
+					c.id === chatId ? { ...c, unread } : c,
+				),
+			);
+		});
+
+		// ── Online / offline tracking ────────────────────────────────────────
+		socket.on("userOnline", ({ uid }: { uid: string }) => {
+			setOnlineUids((prev) => new Set(prev).add(uid));
+		});
+		socket.on("userOffline", ({ uid }: { uid: string }) => {
+			setOnlineUids((prev) => {
+				const next = new Set(prev);
+				next.delete(uid);
+				return next;
+			});
 		});
 
 		return () => {
@@ -120,6 +173,9 @@ const ChatList = forwardRef(function ChatList(
 			socket.off("userSearch");
 			socket.off("newMessage");
 			socket.off("error");
+			socket.off("unreadUpdated");
+			socket.off("userOnline");
+			socket.off("userOffline");
 			socket.disconnect();
 		};
 	}, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -140,6 +196,14 @@ const ChatList = forwardRef(function ChatList(
 	useEffect(() => { setUserStatus("idle"); }, [modal]);
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
+
+	const handleSelectChat = (id: string) => {
+		// Reset unread locally when the user opens a chat
+		setChats((prev) =>
+			prev.map((c) => (c.id === id ? { ...c, unread: 0 } : c)),
+		);
+		onSelectChat(id, chats);
+	};
 
 	const handlePrivateChat = (uid: string) => {
 		socket.emit("createChat", { members: [auth.currentUser?.uid, uid] });
@@ -231,6 +295,8 @@ const ChatList = forwardRef(function ChatList(
 							</svg>
 						</button>
 
+						<ThemeToggle />
+
 						<button
 							className="chatlist-icon-btn"
 							title="Sign out"
@@ -283,17 +349,20 @@ const ChatList = forwardRef(function ChatList(
 							avatarUrl = profile?.avatarUrl ?? "";
 						}
 
+						const isOnline = !chat.isGroup && onlineUids.has(participant?.user.uid ?? "");
+
 						return (
 							<Chat
 								key={chat.id}
 								chat={chat}
 								activeChatId={activeChatId!}
-								onSelectChat={(id) => onSelectChat(id, chats)}
+								onSelectChat={handleSelectChat}
 								i={i}
 								fullName={fullName}
 								p={chat.isGroup ? undefined : participant?.user.profile}
 								avatarUrl={avatarUrl}
 								isGroup={chat.isGroup}
+								isOnline={isOnline}
 							/>
 						);
 					})}
@@ -303,5 +372,9 @@ const ChatList = forwardRef(function ChatList(
 	);
 });
 
-export type ChatListHandle = { updateChatPreview: (chatId: string, text: string, sentAt: string) => void };
+export type ChatListHandle = {
+	updateChatPreview: (chatId: string, text: string, sentAt: string) => void;
+	resetUnread: (chatId: string) => void;
+	getOnlineUids: () => Set<string>;
+};
 export default ChatList;

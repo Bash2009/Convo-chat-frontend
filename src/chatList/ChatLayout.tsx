@@ -23,11 +23,17 @@ const ChatLayout = () => {
 		chatListRef.current?.updateChatPreview(chatId, text, sentAt);
 	};
 
+	const handleChatRead = (chatId: string) => {
+		chatListRef.current?.resetUnread(chatId);
+	};
+
 	const handleChatDeleted = (chatId: string) => {
 		if (activeChat?.id === chatId) {
 			setActiveChat(null);
 		}
 	};
+
+	const onlineUids = chatListRef.current?.getOnlineUids() ?? new Set<string>();
 
 	return (
 		<div className="chat-layout">
@@ -47,7 +53,9 @@ const ChatLayout = () => {
 						chat={activeChat}
 						onBack={() => setActiveChat(null)}
 						onPreviewUpdate={handlePreviewUpdate}
+						onChatRead={handleChatRead}
 						onChatDeleted={handleChatDeleted}
+						onlineUids={onlineUids}
 					/>
 				) : (
 					<div className="chat-layout-empty">

@@ -7,22 +7,22 @@
   width: 100%;
   height: 100vh;
   height: 100dvh;
-  background: #f8f9fa;
+  background: var(--page-bg);
   font-family: "DM Sans", sans-serif;
 }
 
 .edit-profile-loading {
-  color: #9ca3af;
+  color: var(--text-placeholder);
   font-size: 0.9rem;
 }
 
 .edit-profile-card {
   width: 100%;
   max-width: 520px;
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 16px;
   padding: 1.75rem 2rem 2rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -40,7 +40,7 @@
   gap: 4px;
   background: none;
   border: none;
-  color: var(--navy, #191970);
+  color: var(--accent);
   font-family: "DM Sans", sans-serif;
   font-size: 0.85rem;
   font-weight: 500;
@@ -50,13 +50,13 @@
   transition: background 0.12s;
 }
 .edit-profile-back:hover {
-  background: #f0f2ff;
+  background: var(--accent-active);
 }
 
 .edit-profile-title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--navy, #191970);
+  color: var(--accent);
   margin: 0;
   flex: 1;
 }
@@ -76,14 +76,14 @@
   flex-shrink: 0;
   position: relative;
   cursor: pointer;
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: border-color 0.18s;
 }
 .edit-avatar-preview:hover {
-  border-color: var(--navy, #191970);
+  border-color: var(--accent);
 }
 .edit-avatar-preview img {
   width: 100%;
@@ -113,13 +113,13 @@
 .edit-avatar-label {
   font-weight: 600;
   font-size: 0.85rem;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0 0 2px;
 }
 
 .edit-avatar-hint {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--text-placeholder);
   margin: 0 0 6px;
 }
 
@@ -142,7 +142,7 @@
   transform: scale(1.12);
 }
 .edit-avatar-opt.selected {
-  border-color: var(--navy, #191970);
+  border-color: var(--accent);
 }
 
 /* Fields */
@@ -170,9 +170,9 @@
 .edit-profile-cancel {
   padding: 9px 22px;
   border-radius: 10px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
-  color: #374151;
+  border: 1.5px solid var(--border-strong);
+  background: var(--card-bg);
+  color: var(--text-secondary);
   font-family: "DM Sans", sans-serif;
   font-size: 0.875rem;
   font-weight: 500;
@@ -180,16 +180,16 @@
   transition: background 0.12s, border-color 0.12s;
 }
 .edit-profile-cancel:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--hover-bg);
+  border-color: var(--border);
 }
 
 .edit-profile-save {
   padding: 9px 22px;
   border-radius: 10px;
   border: none;
-  background: var(--navy, #191970);
-  color: #fff;
+  background: var(--accent);
+  color: var(--text-inverse);
   font-family: "DM Sans", sans-serif;
   font-size: 0.875rem;
   font-weight: 600;
@@ -197,7 +197,7 @@
   transition: background 0.12s, opacity 0.12s;
 }
 .edit-profile-save:hover {
-  background: #0f1b6b;
+  background: var(--accent-hover);
 }
 .edit-profile-save:disabled {
   opacity: 0.5;
