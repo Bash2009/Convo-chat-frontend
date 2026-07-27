@@ -79,7 +79,7 @@ const ProfileEdit = () => {
       if (avatarFile) formData.append("avatar", avatarFile);
       else if (avatarPreview) formData.append("avatarUrl", avatarPreview);
 
-      await api.patch(`/profile/update/${auth.currentUser?.uid}`, formData);
+      await api.patch(`/profile/update/`, formData);
       showToast("Profile updated!");
       navigate("/chats");
     } catch (err: unknown) {
