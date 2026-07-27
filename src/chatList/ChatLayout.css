@@ -163,6 +163,11 @@
 	align-items: flex-end;
 	gap: 6px;
 	margin-bottom: 3px;
+	/* Virtualization: only paint & layout elements when they're near the viewport.
+	   content-visibility: auto skips rendering for off-screen rows and gives the
+	   browser a contain-intrinsic-size hint so scrollbar height stays correct. */
+	content-visibility: auto;
+	contain-intrinsic-size: 54px;
 }
 .chatroom-msg-row.own   { justify-content: flex-end; }
 .chatroom-msg-row.other { justify-content: flex-start; }

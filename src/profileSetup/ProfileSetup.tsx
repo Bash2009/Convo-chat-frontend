@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { auth } from "../firebase";
-
 import { type ProfileData, type ProfileErrors } from "./types";
 import StepWelcome from "./StepWelcome";
 import StepIdentity from "./StepIdentity";
@@ -41,9 +39,7 @@ const validateIdentity = (data: ProfileData): ProfileErrors => {
 	return e;
 };
 
-const validateAbout = (_data: ProfileData): ProfileErrors => {
-	return {};
-};
+const validateAbout = (_data: ProfileData): ProfileErrors => ({});
 
 const ProfileSetup = () => {
 	const navigate = useNavigate();
@@ -117,7 +113,6 @@ const ProfileSetup = () => {
 		setSubmit(true);
 		try {
 			const formData = new FormData();
-			formData.append("uid", auth.currentUser?.uid ?? "");
 			formData.append("firstName", data.firstName.trim());
 			formData.append("lastName", data.lastName.trim());
 			formData.append("userName", data.username);

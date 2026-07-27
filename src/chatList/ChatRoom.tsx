@@ -101,11 +101,14 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput]       = useState("");
 	const [loading, setLoading]   = useState(true);
+	const [hasMore, setHasMore]   = useState(true);
 	const [showActions, setShowActions] = useState(false);
 	const [showAddMember, setShowAddMember] = useState(false);
 	const actionsRef = useRef<HTMLDivElement>(null);
+	const messagesRef = useRef<HTMLDivElement>(null);
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const inputRef  = useRef<HTMLTextAreaElement>(null);
+	const isLoadingMore = useRef(false);
 
 	const otherParticipant = !chat.isGroup
 		? chat.participants.find((p) => p.user.uid !== currentUid)?.user
@@ -127,6 +130,8 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		// eslint-disable-next-line react-hooks/set-state-in-effect -- reset state on chat switch
 		setLoading(true);
 		setMessages([]);
+		setHasMore(true);
+		isLoadingMore.current = false;
 
 		// Join the room — server responds with 'messages' (history)
 		socket.emit("joinChat", { chatId: chat.id });
@@ -134,6 +139,26 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		socket.on("messages", (msgs: Message[]) => {
 			setMessages(msgs);
 			setLoading(false);
+		});
+
+		// Handle paginated load of older messages
+		socket.on("moreMessages", (olderMessages: Message[]) => {
+			if (olderMessages.length === 0) {
+				setHasMore(false);
+			} else {
+				// Maintain scroll position after prepending older messages
+				const container = messagesRef.current;
+				const prevHeight = container?.scrollHeight ?? 0;
+
+				setMessages((prev) => [...olderMessages, ...prev]);
+
+				if (container) {
+					requestAnimationFrame(() => {
+						container.scrollTop = container.scrollHeight - prevHeight;
+					});
+				}
+			}
+			isLoadingMore.current = false;
 		});
 
 		socket.on("newMessage", (msg: Message) => {
@@ -165,16 +190,34 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 		return () => {
 			socket.emit("leaveChat", { chatId: chat.id });
 			socket.off("messages");
+			socket.off("moreMessages");
 			socket.off("newMessage");
 			socket.off("messageStatus");
 			socket.off("chatDeleted", onChatDeletedHandler);
 		};
 	}, [chat.id, currentUid]);
 
-	// Scroll to bottom on new messages
+	// ── Scroll-to-bottom on new messages ────────────────────────────────────
+
 	useEffect(() => {
 		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, [messages]);
+
+	// ── Infinite scroll: load older messages on scroll-to-top ───────────────
+
+	const handleMessagesScroll = () => {
+		const container = messagesRef.current;
+		if (!container || isLoadingMore.current || !hasMore) return;
+
+		// Trigger load when the user scrolls within 80px of the top
+		if (container.scrollTop <= 80) {
+			isLoadingMore.current = true;
+			socket.emit("loadMoreMessages", {
+				chatId: chat.id,
+				before: messages[0]?.id,
+			});
+		}
+	};
 
 	// ── Close actions dropdown on outside click ─────────────────────────────
 
@@ -312,7 +355,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatDeleted }: Props) => {
 			)}
 
 			{/* Messages */}
-			<div className="chatroom-messages">
+			<div className="chatroom-messages" ref={messagesRef} onScroll={handleMessagesScroll}>
 				{loading && <p className="chatroom-loading">Loading…</p>}
 
 				{!loading && messages.length === 0 && (
