@@ -8,12 +8,12 @@ interface AddMemberModalProps {
 	onClose: () => void;
 }
 
-function useDebounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
+function useDebounce<T extends unknown[]>(fn: (...args: T) => void, delay: number): (...args: T) => void {
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	return useCallback((...args: unknown[]) => {
+	return useCallback((...args: T) => {
 		if (timer.current) clearTimeout(timer.current);
 		timer.current = setTimeout(() => fn(...args), delay);
-	}, [fn, delay]) as unknown as T;
+	}, [fn, delay]);
 }
 
 export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
