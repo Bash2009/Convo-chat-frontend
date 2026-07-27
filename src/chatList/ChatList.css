@@ -6,6 +6,7 @@
 	height: 100%;
 	background: var(--card-bg);
 	font-family: var(--font-body);
+	position: relative;
 }
 
 /* Header */
@@ -107,7 +108,9 @@
 .chatlist-items::-webkit-scrollbar { width: 0; }
 
 .chatlist-status {
-	text-align: center;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	color: var(--text-placeholder);
 	font-size: 0.875rem;
 	padding: 2rem 1rem;
@@ -344,25 +347,30 @@
 
 /* ── GroupInfoPanel ────────────────────── */
 
+.chatlist-modal--wide {
+	max-width: 480px;
+}
+
 .group-info-header {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	padding: 0.5rem 0 0.25rem;
-	gap: 8px;
+	padding: 1rem 0 0.25rem;
+	gap: 10px;
 }
 
 .group-info-name {
 	font-family: var(--font-display);
-	font-size: 1.15rem;
+	font-size: 1.25rem;
 	font-weight: 700;
 	color: var(--text-primary);
 	margin: 0;
 	text-align: center;
+	font-variation-settings: 'opsz' 72;
 }
 
 .group-info-count {
-	font-size: 0.82rem;
+	font-size: 0.85rem;
 	color: var(--text-muted);
 	margin: 0;
 }
@@ -370,31 +378,31 @@
 .group-info-divider {
 	height: 1px;
 	background: var(--border);
-	margin: 0.75rem 0;
+	margin: 1rem 0;
 }
 
 .group-info-members {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
-	max-height: min(400px, 50vh);
+	max-height: min(420px, 55vh);
 	overflow-y: auto;
 }
 
 .group-info-members-title {
-	font-size: 0.72rem;
+	font-size: 0.7rem;
 	font-weight: 600;
 	color: var(--text-placeholder);
 	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	margin: 0 0 6px;
+	letter-spacing: 0.06em;
+	margin: 0 0 8px;
 }
 
 .group-info-member {
 	display: flex;
 	align-items: center;
-	gap: 10px;
-	padding: 8px 10px;
+	gap: 12px;
+	padding: 10px 12px;
 	border-radius: var(--radius-sm);
 	cursor: pointer;
 	transition: background 0.12s;
@@ -409,7 +417,7 @@
 }
 
 .group-info-member-name {
-	font-size: 0.87rem;
+	font-size: 0.9rem;
 	font-weight: 600;
 	color: var(--text-primary);
 	margin: 0;
@@ -419,9 +427,9 @@
 }
 
 .group-info-member-username {
-	font-size: 0.78rem;
+	font-size: 0.8rem;
 	color: var(--text-muted);
-	margin: 0;
+	margin: 2px 0 0;
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -429,16 +437,17 @@
 
 .group-info-member-you {
 	display: inline-block;
-	font-size: 0.68rem;
+	font-size: 0.65rem;
 	font-weight: 600;
 	color: var(--accent);
 	background: var(--accent-light);
-	padding: 1px 7px;
+	padding: 2px 8px;
 	border-radius: 999px;
 }
 
 .group-info-member-chevron {
 	flex-shrink: 0;
+	color: var(--text-placeholder);
 }
 
 .group-info-members::-webkit-scrollbar {
@@ -764,4 +773,57 @@
 	height: 3px;
 	background: var(--accent);
 	transition: width 0.1s linear;
+}
+
+/* ── FAB — bottom-right compose button ── */
+
+.chatlist-fab-wrap {
+	position: absolute;
+	bottom: 20px;
+	right: 20px;
+	z-index: 50;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 10px;
+}
+
+.chatlist-fab {
+	width: 50px;
+	height: 50px;
+	border-radius: 50%;
+	border: none;
+	background: var(--accent);
+	color: var(--text-inverse);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	box-shadow: 0 4px 16px rgba(201, 80, 79, 0.35);
+	transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.chatlist-fab:hover {
+	background: var(--accent-hover);
+	transform: scale(1.06);
+	box-shadow: 0 6px 24px rgba(201, 80, 79, 0.45);
+}
+.chatlist-fab:active {
+	transform: scale(0.95);
+}
+
+/* Dropdown above the FAB */
+.chatlist-fab-wrap .chatlist-dropdown {
+	position: static;
+	animation: dropdownFadeInUp 0.15s ease;
+	transform-origin: bottom right;
+}
+
+@keyframes dropdownFadeInUp {
+	from { opacity: 0; transform: translateY(8px) scale(0.95); }
+	to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Ensure chatlist-items has room for FAB */
+.chatlist-items {
+	padding-bottom: 70px;
 }

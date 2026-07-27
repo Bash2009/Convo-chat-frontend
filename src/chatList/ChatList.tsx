@@ -429,22 +429,6 @@ const ChatList = forwardRef(function ChatList(
 						<p className="chatlist-subtitle">Messages</p>
 					</div>
 					<div className="chatlist-header-actions">
-						<div className="chatlist-dropdown-wrap" ref={dropdownRef}>
-							<button
-								className="chatlist-icon-btn"
-								title="New chat"
-								onClick={() => setDropdown((v) => !v)}
-							>
-								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-									<line x1="12" y1="5" x2="12" y2="19" />
-									<line x1="5" y1="12" x2="19" y2="12" />
-								</svg>
-							</button>
-							{dropdown && (
-								<ChatTypeDropdown setDropdown={setDropdown} setModal={setModal} />
-							)}
-						</div>
-
 						<button
 							className="chatlist-icon-btn"
 							title="Edit profile"
@@ -528,7 +512,11 @@ const ChatList = forwardRef(function ChatList(
 				</div>
 
 				<div className="chatlist-items">
-					{loading && <p className="chatlist-status">Loading…</p>}
+					{loading && (
+						<div className="chatlist-status">
+							<div className="spinner" />
+						</div>
+					)}
 					{error && <p className="chatlist-status error">{error}</p>}
 					{!loading && !error && filtered.length === 0 && (
 						<p className="chatlist-status">No conversations found.</p>
@@ -571,6 +559,23 @@ const ChatList = forwardRef(function ChatList(
 							/>
 						);
 					})}
+				</div>
+
+				{/* FAB — bottom-right, dropdown opens upward */}
+				<div className="chatlist-fab-wrap" ref={dropdownRef}>
+					{dropdown && (
+						<ChatTypeDropdown setDropdown={setDropdown} setModal={setModal} />
+					)}
+					<button
+						className="chatlist-fab"
+						title="New chat"
+						onClick={() => setDropdown((v) => !v)}
+					>
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+							<line x1="12" y1="5" x2="12" y2="19" />
+							<line x1="5" y1="12" x2="19" y2="12" />
+						</svg>
+					</button>
 				</div>
 
 				{/* Undo toast */}

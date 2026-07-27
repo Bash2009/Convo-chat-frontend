@@ -8,16 +8,126 @@
 	font-family: var(--font-body);
 }
 
-/* Auth card */
+/* ── Auth page: split hero + form ─────── */
+
+.auth-page {
+	display: flex;
+	width: 100%;
+	max-width: 900px;
+	min-height: 100vh;
+	min-height: 100dvh;
+}
+
+.auth-hero {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: 3rem;
+	position: relative;
+	overflow: hidden;
+}
+
+/* Decorative glow layer — left half on desktop, full on mobile */
+.auth-hero-decoration {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.auth-hero-brand {
+	position: relative;
+	z-index: 1;
+}
+
+.auth-hero-title {
+	font-family: var(--font-display);
+	font-size: 3.5rem;
+	font-weight: 700;
+	color: var(--accent);
+	letter-spacing: -0.04em;
+	font-variation-settings: 'opsz' 144;
+	margin: 0 0 0.5rem;
+	line-height: 1;
+}
+
+.auth-hero-tagline {
+	font-size: 1.05rem;
+	color: var(--text-muted);
+	line-height: 1.6;
+	margin: 0;
+}
+
+/* Decorative glow circles */
+@media (min-width: 681px) {
+	.auth-hero-decoration {
+		position: fixed;
+		left: 0;
+		top: 0;
+		width: 50vw;
+		height: 100vh;
+		pointer-events: none;
+	}
+}
+
+.auth-hero-circle {
+	position: absolute;
+	border-radius: 50%;
+}
+
+.auth-hero-circle--1 {
+	width: clamp(200px, 24vw, 360px);
+	height: clamp(200px, 24vw, 360px);
+	background: radial-gradient(circle, rgba(201, 80, 79, 0.10), transparent 70%);
+	top: -10%;
+	right: -5%;
+}
+
+.auth-hero-circle--2 {
+	width: clamp(140px, 16vw, 240px);
+	height: clamp(140px, 16vw, 240px);
+	background: radial-gradient(circle, rgba(61, 122, 110, 0.07), transparent 70%);
+	bottom: 8%;
+	left: -8%;
+}
+
+.auth-hero-circle--3 {
+	width: clamp(100px, 10vw, 160px);
+	height: clamp(100px, 10vw, 160px);
+	background: radial-gradient(circle, rgba(200, 145, 62, 0.06), transparent 70%);
+	bottom: 28%;
+	right: 10%;
+}
+
+@media (max-width: 680px) {
+	.auth-hero-decoration {
+		position: fixed;
+		inset: 0;
+		width: 100vw;
+		height: 100vh;
+		pointer-events: none;
+	}
+}
+
+.auth-form-panel {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2rem;
+}
+
+/* Auth card (inside form panel) */
 .auth-card {
 	background: var(--card-bg);
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius-xl);
 	box-shadow: var(--shadow-lg);
 	padding: 2.5rem 2.5rem 2rem;
 	width: 100%;
-	max-width: 420px;
+	max-width: 400px;
 	position: relative;
 	overflow: hidden;
+	animation: fadeInUp 0.3s ease;
 }
 
 .auth-card::before {
@@ -89,6 +199,7 @@
 	padding: 10px 0;
 	width: 100%;
 	transition: background-color 0.2s, transform 0.15s;
+	cursor: pointer;
 }
 
 .btn-navy:hover {
@@ -101,6 +212,18 @@
 	opacity: 0.5;
 	cursor: not-allowed;
 	transform: none;
+}
+
+.btn-loading-text {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	color: #fff;
+}
+
+[data-theme="dark"] .btn-loading-text {
+	color: #f0ece6;
 }
 
 /* Auth switch text */
@@ -118,4 +241,52 @@
 
 .switch-link:hover {
 	text-decoration: underline;
+}
+
+/* ── Auth-page theme toggle ── */
+
+.auth-page > .chatlist-icon-btn {
+	position: fixed;
+	top: 16px;
+	right: 16px;
+	z-index: 100;
+	width: 40px;
+	height: 40px;
+	border: none;
+	border-radius: var(--radius-sm);
+	background: var(--card-bg);
+	color: var(--text-secondary);
+	box-shadow: var(--shadow-md);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.15s, transform 0.15s;
+}
+
+.auth-page > .chatlist-icon-btn:hover {
+	background: var(--hover-bg);
+	transform: scale(1.05);
+}
+
+/* ── Mobile auth ── */
+@media (max-width: 680px) {
+	.auth-page {
+		flex-direction: column;
+		min-height: auto;
+	}
+
+	.auth-hero {
+		padding: 2.5rem 2rem 1rem;
+		align-items: center;
+		text-align: center;
+	}
+
+	.auth-hero-title {
+		font-size: 2.5rem;
+	}
+
+	.auth-form-panel {
+		padding: 1rem 1.5rem 2rem;
+	}
 }

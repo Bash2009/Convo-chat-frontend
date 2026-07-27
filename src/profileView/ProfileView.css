@@ -11,16 +11,16 @@
 
 .profile-view-card {
 	width: 100%;
-	max-width: 460px;
+	max-width: 660px;
 	background: var(--card-bg);
-	border-radius: 20px;
-	box-shadow: var(--shadow-md);
+	border-radius: var(--radius-xl);
+	box-shadow: var(--shadow-lg);
 	overflow: hidden;
-	animation: profileViewFadeIn 0.2s ease;
+	animation: profileViewFadeIn 0.35s ease;
 }
 
 @keyframes profileViewFadeIn {
-	from { opacity: 0; transform: translateY(8px); }
+	from { opacity: 0; transform: translateY(12px); }
 	to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -28,14 +28,14 @@
 .profile-view-header {
 	display: flex;
 	align-items: center;
-	padding: 0.85rem 1.25rem;
+	padding: 1rem 1.5rem;
 	border-bottom: 1px solid var(--border);
 }
 
 .profile-view-back {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
 	background: none;
 	border: none;
 	color: var(--accent);
@@ -43,9 +43,9 @@
 	font-size: 0.88rem;
 	font-weight: 500;
 	cursor: pointer;
-	padding: 6px 10px;
-	border-radius: 8px;
-	transition: background 0.12s;
+	padding: 8px 12px;
+	border-radius: var(--radius-sm);
+	transition: background 0.15s;
 }
 .profile-view-back:hover {
 	background: var(--hover-bg);
@@ -53,43 +53,46 @@
 
 /* Body */
 .profile-view-body {
-	padding: 2rem 1.5rem 2.5rem;
+	padding: 2.5rem 2rem 3rem;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 }
 
 .profile-view-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	color: var(--text-placeholder);
 	font-size: 0.9rem;
 	margin: 0;
-	padding: 2rem 0;
+	padding: 3rem 0;
 }
 
 /* Avatar */
 .profile-view-avatar-section {
-	margin-bottom: 1rem;
-}
-
-.profile-view-avatar-section .avatar {
-	border: 3px solid var(--accent-light);
+	margin-bottom: 1.25rem;
 }
 
 /* Name */
 .profile-view-name {
-	font-size: 1.35rem;
+	font-family: var(--font-display);
+	font-size: 1.6rem;
 	font-weight: 700;
 	color: var(--text-primary);
 	margin: 0 0 4px;
 	text-align: center;
+	font-variation-settings: 'opsz' 72;
+	letter-spacing: -0.02em;
 }
 
 /* Username */
 .profile-view-username {
-	font-size: 0.9rem;
+	font-size: 0.95rem;
 	color: var(--text-muted);
-	margin: 0 0 1.25rem;
+	margin: 0 0 1.5rem;
 	text-align: center;
+	font-family: var(--font-mono);
 }
 
 /* Divider */
@@ -97,7 +100,7 @@
 	width: 100%;
 	height: 1px;
 	background: var(--border);
-	margin-bottom: 1.25rem;
+	margin-bottom: 1.5rem;
 }
 
 /* Fields */
@@ -108,22 +111,25 @@
 
 .profile-view-field-label {
 	display: block;
-	font-size: 0.72rem;
+	font-size: 0.7rem;
 	font-weight: 600;
 	color: var(--text-placeholder);
 	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	margin-bottom: 4px;
+	letter-spacing: 0.06em;
+	margin-bottom: 6px;
 }
 
 .profile-view-field-value {
-	font-size: 0.9rem;
+	font-size: 0.95rem;
 	color: var(--text-secondary);
 	margin: 0;
-	line-height: 1.5;
+	line-height: 1.6;
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
+	padding: 10px 14px;
+	background: var(--input-bg);
+	border-radius: var(--radius-sm);
 }
 
 /* Empty state */

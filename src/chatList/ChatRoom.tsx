@@ -131,6 +131,11 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, on
 		socket.on("newMessage", (msg: Message) => {
 			setMessages((prev) => [...prev, msg]);
 			onPreviewUpdate?.(chat.id, msg.text, msg.sentAt);
+			if (msg.senderId !== currentUid) {
+				socket.emit("markRead", { chatId: chat.id, uid: currentUid }, () => {
+					onChatRead?.(chat.id);
+				});
+			}
 		});
 
 		socket.on(

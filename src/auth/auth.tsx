@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
+import api from "../backend";
 import Forms from "./forms";
 
 const Auth = () => {
@@ -11,15 +12,26 @@ const Auth = () => {
 	useEffect(() => {
 		const unsub = onAuthStateChanged(auth, async (user) => {
 			if (user && localStorage.getItem("access_token")) {
-				// Already logged in — skip the auth screen
-				navigate("/chats", { replace: true });
+				try {
+					await api.get(`/profile/id/${user.uid}`);
+					navigate("/chats", { replace: true });
+				} catch {
+					navigate("/profile-setup", { replace: true });
+				}
+				return;
 			}
 			setChecking(false);
 		});
 		return unsub;
 	}, [navigate]);
 
-	if (checking) return null;
+	if (checking) {
+		return (
+			<div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", width: "100vw" }}>
+				<div className="spinner spinner--large" />
+			</div>
+		);
+	}
 	return <Forms />;
 };
 

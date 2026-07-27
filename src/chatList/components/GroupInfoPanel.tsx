@@ -14,7 +14,6 @@ export const GroupInfoPanel = ({ chat, onClose, onlineUids }: GroupInfoPanelProp
 	const navigate = useNavigate();
 	const currentUid = auth.currentUser?.uid ?? "";
 
-	// Separate current user and other members for display order
 	const currentMember = chat.participants.find(
 		(p) => p.user.uid === currentUid,
 	);
@@ -35,14 +34,13 @@ export const GroupInfoPanel = ({ chat, onClose, onlineUids }: GroupInfoPanelProp
 
 	return createPortal(
 		<div className="chatlist-modal-overlay" onClick={onClose}>
-			<div className="chatlist-modal" onClick={(e) => e.stopPropagation()}>
-				{/* Header */}
+			<div className="chatlist-modal chatlist-modal--wide" onClick={(e) => e.stopPropagation()}>
 				<div className="group-info-header">
 					<Avatar
 						name={chat.name}
 						avatarUrl={chat.avatarUrl}
 						online={false}
-						size={64}
+						size={72}
 					/>
 					<h2 className="group-info-name">{chat.name}</h2>
 					<p className="group-info-count">
@@ -51,10 +49,8 @@ export const GroupInfoPanel = ({ chat, onClose, onlineUids }: GroupInfoPanelProp
 					</p>
 				</div>
 
-				{/* Divider */}
 				<div className="group-info-divider" />
 
-				{/* Members list */}
 				<div className="group-info-members">
 					<p className="group-info-members-title">Members</p>
 
@@ -73,7 +69,7 @@ export const GroupInfoPanel = ({ chat, onClose, onlineUids }: GroupInfoPanelProp
 									name={fullName}
 									avatarUrl={profile.avatarUrl}
 									online={onlineUids?.has(member.user.uid) ?? false}
-									size={40}
+									size={44}
 								/>
 								<div className="group-info-member-info">
 									<p className="group-info-member-name">{fullName}</p>
@@ -84,14 +80,13 @@ export const GroupInfoPanel = ({ chat, onClose, onlineUids }: GroupInfoPanelProp
 										)}
 									</p>
 								</div>
-								{/* Chevron */}
 								<svg
 									className="group-info-member-chevron"
-									width="16"
-									height="16"
+									width="18"
+									height="18"
 									viewBox="0 0 24 24"
 									fill="none"
-									stroke="#9ca3af"
+									stroke="currentColor"
 									strokeWidth="2"
 									strokeLinecap="round"
 									strokeLinejoin="round"
@@ -103,7 +98,6 @@ export const GroupInfoPanel = ({ chat, onClose, onlineUids }: GroupInfoPanelProp
 					})}
 				</div>
 
-				{/* Actions */}
 				<div className="chatlist-modal-actions">
 					<button className="chatlist-modal-cancel" onClick={onClose}>
 						Close
