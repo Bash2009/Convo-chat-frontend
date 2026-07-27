@@ -103,6 +103,34 @@
 	to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes swipeDeleteReveal {
+	from { transform: scaleX(0); }
+	to   { transform: scaleX(1); }
+}
+
+/* Wrapper for swipe-to-delete */
+.chatlist-item-wrap {
+	position: relative;
+	overflow: hidden;
+}
+
+.chatlist-swipe-delete {
+	position: absolute;
+	inset: 0;
+	background: var(--danger, #e53e3e);
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	padding-right: 20px;
+	color: #fff;
+	transform-origin: right center;
+	animation: swipeDeleteReveal 0.25s ease;
+}
+
+.chatlist-swipe-delete svg {
+	opacity: 0.8;
+}
+
 .chatlist-item {
 	display: flex;
 	align-items: center;
@@ -111,6 +139,13 @@
 	cursor: pointer;
 	transition: background 0.12s;
 	animation: chatListFadeIn 0.25s ease both;
+	position: relative;
+	background: var(--card-bg);
+	z-index: 1;
+	will-change: transform;
+	user-select: none;
+	-webkit-user-select: none;
+	touch-action: pan-y;
 }
 .chatlist-item:hover  { background: var(--hover-bg); }
 .chatlist-item.active { background: var(--accent-active); }
@@ -145,9 +180,26 @@
 .chatlist-item-msg {
 	font-size: 0.8rem;
 	color: var(--text-muted);
-	white-space: nowrap;
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	min-width: 0;
+	flex: 1;
+}
+
+.chatlist-item-msg-text {
 	overflow: hidden;
 	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.chatlist-status-tick {
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 0;
+}
+.chatlist-status-tick svg {
+	display: block;
 }
 
 .chatlist-badge {
@@ -615,4 +667,76 @@
 .chatlist-context-item svg {
 	flex-shrink: 0;
 	color: var(--text-placeholder);
+}
+
+/* ── Undo delete toast ───────────────────────────────────────────────────── */
+
+@keyframes undoToastSlideUp {
+	from { transform: translateY(100%); opacity: 0; }
+	to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes undoToastSlideDown {
+	from { transform: translateY(0); opacity: 1; }
+	to   { transform: translateY(100%); opacity: 0; }
+}
+
+.undo-toast {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	z-index: 100;
+	background: var(--card-bg);
+	color: var(--text-primary);
+	border-radius: 12px 12px 0 0;
+	overflow: hidden;
+	box-shadow: 0 -4px 20px var(--overlay);
+	animation: undoToastSlideUp 0.3s ease;
+}
+
+.undo-toast--dismissed {
+	animation: undoToastSlideDown 0.25s ease forwards;
+}
+
+.undo-toast-body {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 18px;
+	gap: 12px;
+}
+
+.undo-toast-text {
+	font-size: 0.84rem;
+	font-weight: 400;
+	line-height: 1.4;
+	color: var(--text-primary);
+}
+
+.undo-toast-text strong {
+	font-weight: 600;
+}
+
+.undo-toast-btn {
+	flex-shrink: 0;
+	padding: 7px 16px;
+	border-radius: 8px;
+	border: none;
+	background: var(--accent, #191970);
+	color: #fff;
+	font-family: "DM Sans", sans-serif;
+	font-size: 0.82rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.15s;
+}
+.undo-toast-btn:hover {
+	background: var(--accent-hover, #141560);
+}
+
+.undo-toast-progress {
+	height: 3px;
+	background: var(--accent, #191970);
+	transition: width 0.1s linear;
 }

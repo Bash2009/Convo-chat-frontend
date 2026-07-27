@@ -13,7 +13,7 @@ export const AddMemberModal = ({ chatId, onClose }: AddMemberModalProps) => {
 	const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
 	const [foundUser, setFoundUser] = useState<Participant | null>(null);
 	const [selected, setSelected] = useState<Participant[]>([]);
-	const listenerRef = useRef<((data: any) => void) | null>(null);
+	const listenerRef = useRef<((data: { userExists: boolean; profile: { user: { uid: string; profile: { firstName: string; lastName: string; username: string; avatarUrl: string } } } }) => void) | null>(null);
 
 	// Cleanup socket listener on unmount
 	useEffect(() => {

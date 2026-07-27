@@ -12,6 +12,7 @@ import type { ChatStructure, Modal, Participant, UserStatus } from "./constants"
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { useErrorModal } from "../ErrorModal";
+import { UndoToast } from "../components/UndoToast";
 
 // Sort chats so the most recently active one appears at the top.
 // ChatStructures without a lastMessageAt are pushed to the bottom.
@@ -44,6 +45,42 @@ const ChatList = forwardRef(function ChatList(
 	const [userStatus, setUserStatus] = useState<UserStatus>("idle");
 	const [foundUser, setFoundUser]   = useState<Participant>();
 	const dropdownRef = useRef<HTMLDivElement>(null);
+
+	// ── Undo delete toast ────────────────────────────────────────────────────
+	const [undoChat, setUndoChat] = useState<{ chat: ChatStructure; chatName: string } | null>(null);
+
+	const requestDelete = (chat: ChatStructure) => {
+		// Immediately confirm any previous pending deletion before starting a new one
+		if (undoChat) {
+			socket.emit("deleteChat", { chatId: undoChat.chat.id });
+		}
+
+		const chatName = chat.isGroup
+			? chat.name
+			: chat.participants
+					.find((p) => p.user.uid !== auth.currentUser?.uid)
+					?.user.profile.firstName ?? "Unknown";
+
+		// Immediately remove from the list
+		setChats((prev) => prev.filter((c) => c.id !== chat.id));
+
+		// Set up the undo toast
+		setUndoChat({ chat, chatName });
+	};
+
+	const handleUndoDelete = () => {
+		if (!undoChat) return;
+		// Restore the chat to the list
+		setChats((prev) => sortChatsByRecent([undoChat.chat, ...prev]));
+		setUndoChat(null);
+	};
+
+	const handleExpireDelete = () => {
+		if (!undoChat) return;
+		// Actually emit the delete event now
+		socket.emit("deleteChat", { chatId: undoChat.chat.id });
+		setUndoChat(null);
+	};
 
 	// ── Muted chats (per-device, persisted to localStorage) ────────────────────
 	const [mutedChats, setMutedChats] = useState<Set<string>>(() => {
@@ -176,6 +213,7 @@ const ChatList = forwardRef(function ChatList(
 		// If the user isn't viewing that chat, also bump the unread counter.
 		// If the tab is in the background, fire a browser notification.
 		socket.on("newMessage", (msg: { chatId: string; text: string; sentAt: string; senderId?: string }) => {
+			const currentUid = auth.currentUser?.uid;
 			setChats((prev) =>
 				sortChatsByRecent(
 					prev.map((c) =>
@@ -184,6 +222,13 @@ const ChatList = forwardRef(function ChatList(
 									...c,
 									lastMessage: msg.text,
 									lastMessageAt: msg.sentAt,
+									lastMessageSenderId: msg.senderId,
+									// If the current user sent it, mark as sent (will update via status events)
+									// Otherwise, no status needed (incoming message)
+									lastMessageStatus:
+										msg.senderId === currentUid
+											? (c.lastMessageStatus ?? "sent")
+											: undefined,
 									// Only bump unread for chats the user isn't currently viewing
 									unread:
 										msg.chatId === activeChatIdRef.current
@@ -242,6 +287,11 @@ const ChatList = forwardRef(function ChatList(
 			);
 		});
 
+		// ── Message status updates ─────────────────────────────────────────
+		// The server sends messageStatus events without a chatId, so we can't
+		// map them back to the sidebar directly. The 10-second poll updates
+		// lastMessageStatus from the server's ChatStructure response.
+
 		// ── Online / offline tracking ────────────────────────────────────────
 		socket.on("userOnline", ({ uid }: { uid: string }) => {
 			setOnlineUids((prev) => new Set(prev).add(uid));
@@ -269,7 +319,8 @@ const ChatList = forwardRef(function ChatList(
 			socket.off("userOffline");
 			socket.disconnect();
 		};
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	// ── Dropdown close on outside click ──────────────────────────────────────
 
@@ -283,7 +334,6 @@ const ChatList = forwardRef(function ChatList(
 	}, []);
 
 	// Reset user search status when modal opens/closes
-	// eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on modal change
 	useEffect(() => { setUserStatus("idle"); }, [modal]);
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
@@ -314,6 +364,23 @@ const ChatList = forwardRef(function ChatList(
 	const handleSearch = (username: string) => {
 		setUserStatus("loading");
 		socket.emit("getUser", { username });
+	};
+
+	const handleMarkAllRead = () => {
+		const currentUid = auth.currentUser?.uid;
+		if (!currentUid) return;
+
+		// Reset all unread counts locally
+		setChats((prev) =>
+			prev.map((c) => {
+				if (c.unread > 0) {
+					// Tell the server to mark this chat as read
+					socket.emit("markRead", { chatId: c.id, uid: currentUid });
+					return { ...c, unread: 0 };
+				}
+				return c;
+			}),
+		);
 	};
 
 	const handleLogout = async () => {
@@ -414,6 +481,21 @@ const ChatList = forwardRef(function ChatList(
 							</button>
 						)}
 
+						{/* Mark all as read — only show when there are unread chats */}
+						{chats.some((c) => c.unread > 0) && (
+							<button
+								className="chatlist-icon-btn"
+								title="Mark all as read"
+								onClick={handleMarkAllRead}
+							>
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+									<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+									<circle cx="12" cy="12" r="3" />
+									<polyline points="9 12 11 14 15 10" />
+								</svg>
+							</button>
+						)}
+
 						<button
 							className="chatlist-icon-btn"
 							title="Sign out"
@@ -482,10 +564,20 @@ const ChatList = forwardRef(function ChatList(
 								isOnline={isOnline}
 								isMuted={mutedChats.has(chat.id)}
 								onToggleMute={toggleMute}
+								onDeleteChat={requestDelete}
 							/>
 						);
 					})}
 				</div>
+
+				{/* Undo toast */}
+				{undoChat && (
+					<UndoToast
+						chatName={undoChat.chatName}
+						onUndo={handleUndoDelete}
+						onExpire={handleExpireDelete}
+					/>
+				)}
 			</div>
 		</>
 	);

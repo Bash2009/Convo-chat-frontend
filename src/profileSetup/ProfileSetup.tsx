@@ -39,7 +39,7 @@ const validateIdentity = (data: ProfileData): ProfileErrors => {
 	return e;
 };
 
-const validateAbout = (_data: ProfileData): ProfileErrors => ({});
+const validateAbout = (): ProfileErrors => ({});
 
 const ProfileSetup = () => {
 	const navigate = useNavigate();
@@ -102,7 +102,7 @@ const ProfileSetup = () => {
 			}
 		}
 		if (step === 2) {
-			const errs = validateAbout(data);
+			const errs = validateAbout();
 			setErrors(errs);
 			if (Object.keys(errs).length > 0) return;
 		}

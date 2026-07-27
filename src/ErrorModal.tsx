@@ -8,6 +8,7 @@ import {
 import { createPortal } from "react-dom";
 import "./ErrorModal.css";
 
+/* eslint-disable react-refresh/only-export-components */
 /* ── Context ─────────────────────────────────────────────────────────────── */
 
 interface ErrorModalContextValue {

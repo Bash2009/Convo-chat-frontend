@@ -33,7 +33,14 @@ const ChatLayout = () => {
 		}
 	};
 
-	const onlineUids = chatListRef.current?.getOnlineUids() ?? new Set<string>();
+	const [onlineUids, setOnlineUids] = useState<Set<string>>(new Set());
+
+	// Sync onlineUids from ChatList after each render via a ref-read effect
+	useEffect(() => {
+		const uids = chatListRef.current?.getOnlineUids() ?? new Set();
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- ref read, not stale closure
+		setOnlineUids(uids);
+	}, []);
 
 	return (
 		<div className="chat-layout">

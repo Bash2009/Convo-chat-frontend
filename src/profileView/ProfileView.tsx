@@ -27,7 +27,10 @@ const ProfileView = () => {
 
 	// Fetch profile data
 	useEffect(() => {
+		let cancelled = false;
+
 		if (!username) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect -- intentional immediate guard
 			setNotFound(true);
 			setLoading(false);
 			return;
@@ -41,6 +44,7 @@ const ProfileView = () => {
 		api
 			.get(`/profile/name/${encodeURIComponent(username)}`)
 			.then((res) => {
+				if (cancelled) return;
 				const data = res.data;
 				let uid: string | undefined;
 				let p: Partial<ProfileData>;
@@ -67,6 +71,7 @@ const ProfileView = () => {
 				});
 			})
 			.catch((err) => {
+				if (cancelled) return;
 				const status = err.response?.status;
 				if (status === 404) {
 					setNotFound(true);
@@ -74,7 +79,11 @@ const ProfileView = () => {
 					showError(`Could not load profile. ${getFriendlyErrorMessage(err)}`);
 				}
 			})
-			.finally(() => setLoading(false));
+			.finally(() => {
+				if (!cancelled) setLoading(false);
+			});
+
+		return () => { cancelled = true; };
 	}, [username, showError]);
 
 	// Track online status in real-time via socket events

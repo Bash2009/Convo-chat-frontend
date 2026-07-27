@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../backend";
 import { Avatar } from "./components/Avatar";
+import { StatusTick } from "../components/StatusTick";
 import { auth } from "../firebase";
 import type { ChatStructure } from "./constants";
 import { AddMemberModal } from "./components/AddMemberModal";
@@ -52,47 +53,6 @@ const formatDayLabel = (iso: string) => {
 	});
 };
 
-// ── Tick icon ──────────────────────────────────────────────────────────────
-
-const StatusTick = ({ status }: { status: Message["status"] }) => {
-	const color   = status === "read" ? "#191970" : "currentColor";
-	const opacity = status === "sent" ? 0.5 : 1;
-
-	if (status === "sent") {
-		return (
-			<svg
-				className="chatroom-tick"
-				width="12" height="12"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke={color}
-				strokeOpacity={opacity}
-				strokeWidth="2.5"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			>
-				<polyline points="20 6 9 17 4 12" />
-			</svg>
-		);
-	}
-
-	return (
-		<svg
-			className="chatroom-tick"
-			width="18" height="12"
-			viewBox="0 0 36 24"
-			fill="none"
-			stroke={color}
-			strokeWidth="2.5"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-		>
-			<polyline points="36 6 17 17 12 12" />
-			<polyline points="24 6 9 17 4 12" />
-		</svg>
-	);
-};
-
 // ── ChatRoom ───────────────────────────────────────────────────────────────
 // This component does NOT own the socket connection — ChatList does.
 // ChatRoom only emits joinChat / leaveChat and listens for room-scoped events.
@@ -135,7 +95,6 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, on
 	// ── Socket events (room-scoped only) ──────────────────────────────────────
 
 	useEffect(() => {
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- reset state on chat switch
 		setLoading(true);
 		setMessages([]);
 		setHasMore(true);
@@ -208,6 +167,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, on
 			socket.off("messageStatus");
 			socket.off("chatDeleted", onChatDeletedHandler);
 		};
+	// eslint-disable-next-line react-hooks/exhaustive-deps -- callbacks are stable or handled via chat.id changes
 	}, [chat.id, currentUid]);
 
 	// ── Scroll-to-bottom on new messages ────────────────────────────────────
@@ -441,7 +401,7 @@ const ChatRoom = ({ chat, onBack, onPreviewUpdate, onChatRead, onChatDeleted, on
 										<span className="chatroom-bubble-time">
 											{formatMsgTime(msg.sentAt)}
 										</span>
-										{isOwn && <StatusTick status={msg.status} />}
+										{isOwn && <StatusTick status={msg.status} size="default" />}
 									</div>
 								</div>
 							</div>
